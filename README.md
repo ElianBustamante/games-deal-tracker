@@ -35,8 +35,8 @@ python main.py
 
 ### 3. Configure in Discord
 
-/setcanal #your-channel
-/setdescuento 60
+/setchannel #your-channel
+/setdiscount 60
 /watchlist add Cyberpunk 2077
 
 ## Adding to more servers

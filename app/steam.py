@@ -53,17 +53,23 @@ async def get_featured_deals() -> list[dict]:
             async with session.get(url) as response:
                 if response.status == 200:
                     data = await response.json()
-                    if data and "specials" in data and "items" in data["specials"]:
-                        items = data["specials"]["items"]
+                    if data:
                         deals = []
-                        for item in items:
-                            deals.append({
-                                "app_id": item.get("id"),
-                                "name": item.get("name"),
-                                "price_original": item.get("original_price"),
-                                "price_final": item.get("final_price"),
-                                "discount_percent": item.get("discount_percent")
-                            })
+                        seen_apps = set()
+                        for category_name, category_data in data.items():
+                            if isinstance(category_data, dict) and "items" in category_data:
+                                for item in category_data["items"]:
+                                    app_id = item.get("id")
+                                    if app_id not in seen_apps and item.get("discounted"):
+                                        seen_apps.add(app_id)
+                                        deals.append({
+                                            "app_id": app_id,
+                                            "name": item.get("name"),
+                                            "price_original": item.get("original_price"),
+                                            "price_final": item.get("final_price"),
+                                            "discount_percent": item.get("discount_percent", 0),
+                                            "currency": item.get("currency", "USD")
+                                        })
                         return deals
     except Exception:
         pass

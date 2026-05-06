@@ -4,9 +4,10 @@ import app.steam as steam
 
 def format_price(cents: int, currency: str) -> str:
     if currency.upper() == "CLP":
-        # Divide by 1 and format with dot as thousands separator
-        formatted = f"{cents:,}".replace(",", ".")
-        return f"${formatted} CLP"
+        # Steam API always returns prices in cents, so we divide by 100 first
+        val = int(cents / 100)
+        formatted = f"{val:,}".replace(",", ".")
+        return f"CLP$ {formatted}"
     elif currency.upper() == "USD":
         # Divide by 100
         formatted = f"{cents / 100:.2f}"

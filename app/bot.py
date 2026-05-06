@@ -99,18 +99,18 @@ async def watchlist_show(interaction: discord.Interaction):
 
 bot.tree.add_command(watchlist_group)
 
-@bot.tree.command(name="setcanal", description="Configura el canal donde se enviarán las alertas")
+@bot.tree.command(name="setchannel", description="Configura el canal donde se enviarán las alertas")
 @app_commands.describe(channel="El canal para las alertas")
 @app_commands.checks.has_permissions(manage_channels=True)
-async def setcanal(interaction: discord.Interaction, channel: discord.TextChannel):
+async def setchannel(interaction: discord.Interaction, channel: discord.TextChannel):
     server_id = str(interaction.guild_id)
     await database.set_channel(server_id, str(channel.id))
     await interaction.response.send_message(f"✅ Las alertas se enviarán a {channel.mention}", ephemeral=True)
 
-@bot.tree.command(name="setdescuento", description="Configura el descuento mínimo % para alertas generales")
+@bot.tree.command(name="setdiscount", description="Configura el descuento mínimo % para alertas generales")
 @app_commands.describe(porcentaje="Porcentaje (1-100)")
 @app_commands.checks.has_permissions(manage_channels=True)
-async def setdescuento(interaction: discord.Interaction, porcentaje: int):
+async def setdiscount(interaction: discord.Interaction, porcentaje: int):
     if porcentaje < 1 or porcentaje > 100:
         await interaction.response.send_message("El porcentaje debe estar entre 1 y 100.", ephemeral=True)
         return
