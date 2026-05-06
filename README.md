@@ -31,7 +31,7 @@ Python 3.11+, a Discord bot token, no external API keys needed.
 
 git clone → pip install -r requirements.txt
 cp .env.example .env → fill in DISCORD_TOKEN
-python app/scheduler.py
+python main.py
 
 ### 3. Configure in Discord
 
@@ -59,7 +59,7 @@ Free, takes 1–5 business days.
 1. Purchase a Bot Hosting plan at pebblehost.com.
 2. In the PebbleHost panel, go to the Console and run: `git clone https://github.com/ElianBustamante/steam-deal-tracker.git .`
 3. Create a `.env` file via the File Manager with your `DISCORD_TOKEN`.
-4. Make sure the Startup File is set to `app/scheduler.py` and click Start.
+4. Make sure the Startup File is set to `main.py` and click Start.
 
 ### Oracle Cloud Free Tier (Best free alternative)
 
@@ -68,8 +68,8 @@ sudo apt update && sudo apt install python3.11 python3.11-venv python3-pip git -
 git clone {repo} && cd steam-deal-tracker
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt && cp .env.example .env && nano .env
-nohup python app/scheduler.py &   (or set up systemd for auto-restart)
+nohup python main.py &   (or set up systemd for auto-restart)
 
 ### Self-Hosting
 
-Can be hosted on any Raspberry Pi or old PC. Just install Python 3.11+ and run `app/scheduler.py`.
+Can be hosted on any Raspberry Pi or old PC. Just install Python 3.11+ and run `main.py`.
