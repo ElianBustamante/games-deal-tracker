@@ -43,8 +43,3 @@ async def main():
     async with bot:
         await bot.start(TOKEN)
 
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("Bot stopped by user.")
