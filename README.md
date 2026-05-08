@@ -16,6 +16,19 @@ whether the current deal is the best price it has ever recorded.
 
 Python 3.11+, a Discord bot token, no external API keys needed.
 
+## Tech Stack
+
+- **Language**: Python 3.11+
+- **Discord API**: `discord.py`
+- **HTTP Client**: `aiohttp` (for async Steam API requests)
+- **Database**: SQLite via `aiosqlite` (async)
+- **Task Scheduling**: `apscheduler` (Cron-based triggers)
+- **Environment**: `python-dotenv`
+- **Testing**:
+  - `pytest` (Test runner)
+  - `pytest-asyncio` (Async testing support)
+  - `pytest-mock` (Mocking API responses and DB connections)
+
 ## Setup
 
 ### 1. Create the Discord bot
