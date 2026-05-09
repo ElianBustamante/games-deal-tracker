@@ -7,8 +7,8 @@ load_dotenv()
 STEAM_COUNTRY = os.getenv("STEAM_COUNTRY", "cl")
 STEAM_LANGUAGE = os.getenv("STEAM_LANGUAGE", "es")
 
-async def search_game(name: str) -> dict | None:
-    url = f"https://store.steampowered.com/api/storesearch/?term={name}&l={STEAM_LANGUAGE}&cc={STEAM_COUNTRY}"
+async def search_game(name: str, country: str = STEAM_COUNTRY, language: str = STEAM_LANGUAGE) -> dict | None:
+    url = f"https://store.steampowered.com/api/storesearch/?term={name}&l={language}&cc={country}"
     try:
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
             async with session.get(url) as response:
@@ -21,9 +21,9 @@ async def search_game(name: str) -> dict | None:
         pass
     return None
 
-async def get_game_price(app_id: int) -> dict | None:
+async def get_game_price(app_id: int, country: str = STEAM_COUNTRY) -> dict | None:
     # Using filters=basic,price_overview to ensure we get the game name along with price
-    url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&cc={STEAM_COUNTRY}&filters=basic,price_overview"
+    url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&cc={country}&filters=basic,price_overview"
     try:
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
             async with session.get(url) as response:
@@ -46,8 +46,8 @@ async def get_game_price(app_id: int) -> dict | None:
         pass
     return None
 
-async def get_featured_deals() -> list[dict]:
-    url = f"https://store.steampowered.com/api/featuredcategories?cc={STEAM_COUNTRY}&l={STEAM_LANGUAGE}"
+async def get_featured_deals(country: str = STEAM_COUNTRY, language: str = STEAM_LANGUAGE) -> list[dict]:
+    url = f"https://store.steampowered.com/api/featuredcategories?cc={country}&l={language}"
     try:
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
             async with session.get(url) as response:

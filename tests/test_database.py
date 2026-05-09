@@ -58,7 +58,7 @@ async def test_save_price_snapshot_inserts_multiple_rows():
     await asyncio.sleep(1) # Ensure CURRENT_TIMESTAMP changes between inserts
     await database.save_price_snapshot(app_id, game_name, 500, 2000, 75, "USD")
     
-    history = await database.get_price_history(app_id)
+    history = await database.get_price_history(app_id, "USD")
     assert len(history) == 2
     assert history[0]["price_final"] == 500  # Ordered by DESC recorded_at so latest is first
     assert history[1]["price_final"] == 1000
@@ -72,7 +72,7 @@ async def test_get_historical_low_returns_lowest_price():
     await database.save_price_snapshot(app_id, game_name, 500, 2000, 75, "CLP")
     await database.save_price_snapshot(app_id, game_name, 1000, 2000, 50, "CLP")
     
-    low = await database.get_historical_low(app_id)
+    low = await database.get_historical_low(app_id, "CLP")
     assert low is not None
     assert low["price_final"] == 500
     assert low["discount_percent"] == 75
@@ -80,5 +80,5 @@ async def test_get_historical_low_returns_lowest_price():
 @pytest.mark.asyncio
 async def test_get_historical_low_returns_none_when_no_history():
     app_id = 444
-    low = await database.get_historical_low(app_id)
+    low = await database.get_historical_low(app_id, "CLP")
     assert low is None

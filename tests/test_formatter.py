@@ -1,6 +1,5 @@
-import pytest
 import discord
-from app.formatter import make_deal_embed, make_history_embed, format_price
+from app.formatter import make_deal_embed, make_history_embed
 
 def test_embed_is_gold_when_historical_low():
     game = {

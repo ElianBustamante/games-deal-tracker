@@ -87,13 +87,13 @@ async def test_check_watchlist_skips_notified(mock_db, mock_steam):
     }
     mock_db["was_notified_today"].return_value = True
     
-    result = await check_watchlist("server1")
+    result = await check_watchlist("server1", "us")
     
     assert len(result) == 0
 
 @pytest.mark.asyncio
 async def test_check_general_deals_filters_min_discount(mock_db, mock_steam):
-    mock_steam["get_featured_deals"].return_value = [
+    deals = [
         {"app_id": 1, "name": "Game 1", "price_final": 500, "price_original": 1000, "discount_percent": 50, "currency": "USD"},
         {"app_id": 2, "name": "Game 2", "price_final": 800, "price_original": 1000, "discount_percent": 20, "currency": "USD"}
     ]
@@ -101,7 +101,7 @@ async def test_check_general_deals_filters_min_discount(mock_db, mock_steam):
     mock_db["was_notified_today"].return_value = False
     mock_db["get_historical_low"].return_value = None
     
-    result = await check_general_deals("server1")
+    result = await check_general_deals("server1", deals)
     
     assert len(result) == 1
     assert result[0]["app_id"] == 1

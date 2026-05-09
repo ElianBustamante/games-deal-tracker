@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import AsyncMock
 from app.steam import search_game, get_game_price, get_featured_deals, get_store_url, get_header_image_url
 
 class MockResponse:
@@ -117,7 +116,8 @@ async def test_get_featured_deals_success(mock_aiohttp_session):
                     "name": "Deal Game",
                     "original_price": 1000,
                     "final_price": 500,
-                    "discount_percent": 50
+                    "discount_percent": 50,
+                    "discounted": True
                 }
             ]
         }

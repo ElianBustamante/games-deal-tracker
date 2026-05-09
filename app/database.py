@@ -34,9 +34,27 @@ async def init_db() -> None:
             CREATE TABLE IF NOT EXISTS server_config (
                 server_id TEXT PRIMARY KEY,
                 channel_id TEXT,
-                min_discount INTEGER DEFAULT 50
+                min_discount INTEGER DEFAULT 50,
+                language TEXT DEFAULT 'es'
             )
         ''')
+        
+        # Add column if upgrading from older version
+        try:
+            await db.execute("ALTER TABLE server_config ADD COLUMN language TEXT DEFAULT 'es'")
+        except sqlite3.OperationalError:
+            pass
+            
+        try:
+            await db.execute("ALTER TABLE server_config ADD COLUMN is_dm BOOLEAN DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+            
+        try:
+            await db.execute("ALTER TABLE server_config ADD COLUMN country TEXT DEFAULT 'cl'")
+        except sqlite3.OperationalError:
+            pass
+
         
         await db.execute('''
             CREATE TABLE IF NOT EXISTS notified_deals (
@@ -95,19 +113,38 @@ async def get_watchlist(server_id: str) -> list[dict]:
         return [{"app_id": row["app_id"], "game_name": row["game_name"], "added_at": row["added_at"]} for row in rows]
 
 async def get_all_configured_servers() -> list[str]:
+    # Deprecated: use get_all_configured_targets
     async with await connect_db() as db:
         cursor = await db.execute("SELECT server_id FROM server_config WHERE channel_id IS NOT NULL")
         rows = await cursor.fetchall()
         return [row[0] for row in rows]
 
+async def get_all_configured_targets() -> list[dict]:
+    async with await connect_db() as db:
+        cursor = await db.execute("SELECT server_id, channel_id, is_dm, language, country FROM server_config WHERE channel_id IS NOT NULL")
+        rows = await cursor.fetchall()
+        return [{
+            "target_id": row[0], 
+            "channel_id": row[1], 
+            "is_dm": bool(row[2]),
+            "language": row[3] if row[3] else "es",
+            "country": row[4] if row[4] else "cl"
+        } for row in rows]
+
 # Config Functions
-async def set_channel(server_id: str, channel_id: str) -> None:
+async def set_channel(server_id: str, channel_id: str, is_dm: bool = False) -> None:
     async with await connect_db() as db:
         await db.execute(
-            """INSERT INTO server_config (server_id, channel_id) VALUES (?, ?)
-               ON CONFLICT(server_id) DO UPDATE SET channel_id = excluded.channel_id""",
-            (server_id, channel_id)
+            """INSERT INTO server_config (server_id, channel_id, is_dm) VALUES (?, ?, ?)
+               ON CONFLICT(server_id) DO UPDATE SET channel_id = excluded.channel_id, is_dm = excluded.is_dm""",
+            (server_id, channel_id, is_dm)
         )
+        await db.commit()
+
+async def stop_notifications(server_id: str) -> None:
+    async with await connect_db() as db:
+        await db.execute("DELETE FROM server_config WHERE server_id = ?", (server_id,))
+        await db.execute("DELETE FROM watchlist WHERE server_id = ?", (server_id,))
         await db.commit()
 
 async def get_channel(server_id: str) -> str | None:
@@ -130,6 +167,36 @@ async def get_min_discount(server_id: str) -> int:
         cursor = await db.execute("SELECT min_discount FROM server_config WHERE server_id = ?", (server_id,))
         row = await cursor.fetchone()
         return row[0] if row and row[0] is not None else DEFAULT_MIN_DISCOUNT
+
+async def set_language(server_id: str, language: str) -> None:
+    async with await connect_db() as db:
+        await db.execute(
+            """INSERT INTO server_config (server_id, language) VALUES (?, ?)
+               ON CONFLICT(server_id) DO UPDATE SET language = excluded.language""",
+            (server_id, language)
+        )
+        await db.commit()
+
+async def get_language(server_id: str) -> str:
+    async with await connect_db() as db:
+        cursor = await db.execute("SELECT language FROM server_config WHERE server_id = ?", (server_id,))
+        row = await cursor.fetchone()
+        return row[0] if row and row[0] is not None else "es"
+
+async def set_country(server_id: str, country: str) -> None:
+    async with await connect_db() as db:
+        await db.execute(
+            """INSERT INTO server_config (server_id, country) VALUES (?, ?)
+               ON CONFLICT(server_id) DO UPDATE SET country = excluded.country""",
+            (server_id, country)
+        )
+        await db.commit()
+
+async def get_country(server_id: str) -> str:
+    async with await connect_db() as db:
+        cursor = await db.execute("SELECT country FROM server_config WHERE server_id = ?", (server_id,))
+        row = await cursor.fetchone()
+        return row[0] if row and row[0] is not None else "cl"
 
 # Notifications Functions
 async def mark_as_notified(server_id: str, app_id: int) -> None:
@@ -167,13 +234,13 @@ async def save_price_snapshot(app_id: int, game_name: str, price_final: int, pri
         )
         await db.commit()
 
-async def get_historical_low(app_id: int) -> dict | None:
+async def get_historical_low(app_id: int, currency: str) -> dict | None:
     async with await connect_db() as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute(
             """SELECT price_final, discount_percent, recorded_at 
-               FROM price_history WHERE app_id = ? ORDER BY price_final ASC LIMIT 1""",
-            (app_id,)
+               FROM price_history WHERE app_id = ? AND currency = ? ORDER BY price_final ASC LIMIT 1""",
+            (app_id, currency)
         )
         row = await cursor.fetchone()
         if row:
@@ -184,13 +251,13 @@ async def get_historical_low(app_id: int) -> dict | None:
             }
         return None
 
-async def get_price_history(app_id: int, limit: int = 10) -> list[dict]:
+async def get_price_history(app_id: int, currency: str, limit: int = 10) -> list[dict]:
     async with await connect_db() as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute(
             """SELECT price_final, price_original, discount_percent, recorded_at 
-               FROM price_history WHERE app_id = ? ORDER BY recorded_at DESC LIMIT ?""",
-            (app_id, limit)
+               FROM price_history WHERE app_id = ? AND currency = ? ORDER BY recorded_at DESC LIMIT ?""",
+            (app_id, currency, limit)
         )
         rows = await cursor.fetchall()
         return [{

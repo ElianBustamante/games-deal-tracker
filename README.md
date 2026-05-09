@@ -2,9 +2,16 @@
 
 ## What it does
 
-Discord bot that monitors Steam deals and posts alerts to a configured channel.
-Tracks a per-server watchlist and general deals above a configurable discount threshold.
+Discord bot that monitors Steam deals and posts alerts to a configured channel or private Direct Messages (DMs).
+Tracks a per-server/per-user watchlist and general deals above a configurable discount threshold.
 Builds its own price history over time to identify all-time low prices.
+
+## Features
+
+- **Hybrid Architecture**: Supports both Server channels and Private DMs.
+- **Global Multi-Region**: Monitors prices in over 40 countries, displaying deals in your local currency.
+- **Native Localization (i18n)**: Automatically translates slash commands and bot responses into Spanish or English based on your Discord app settings.
+- **Price History**: Tracks historical lows across multiple currencies dynamically.
 
 ## How price history works
 
@@ -48,15 +55,18 @@ python main.py
 
 ### 3. Configure in Discord
 
-/setchannel #your-channel
+/setchannel #your-channel (Only for servers)
 /setdiscount 60
+/setcountry Chile
+/setlanguage es
 /watchlist add Cyberpunk 2077
+/stop (To pause alerts and wipe your data)
 
 ## Adding to more servers
 
 Use the same invite link. Each server configures its own channel and thresholds.
-Price history is shared globally — data accumulates regardless of which server
-is watching a game.
+Price history is shared globally — data accumulates regardless of which server or user
+is watching a game. Users can also just DM the bot directly to get private alerts!
 
 ## Discord Bot Verification
 
