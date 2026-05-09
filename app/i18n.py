@@ -160,7 +160,7 @@ UI_TEXT = {
         "discount_set": "✅ Alertas generales configuradas a mínimo **{percent}%** de descuento.",
         "language_set": "✅ Idioma configurado a **Español**.",
         "searching": "🔍 Buscando ofertas ahora...",
-        "search_complete": "✅ Búsqueda completada. Se verificaron {servers} servidores y se enviaron {deals} alertas en total.",
+        "search_complete": "✅ Búsqueda completada. Se verificaron {targets} destinos y se enviaron {deals} alertas en total.",
         "no_permissions": "❌ No tienes permisos para usar esto aquí.",
         "country_set": "✅ Región configurada correctamente a: **{country}**",
         "alerts_stopped": "⏹️ Notificaciones pausadas y datos eliminados de la base de datos."
@@ -193,7 +193,7 @@ UI_TEXT = {
         "discount_set": "✅ General alerts configured for a minimum of **{percent}%** off.",
         "language_set": "✅ Language set to **English**.",
         "searching": "🔍 Searching for deals now...",
-        "search_complete": "✅ Search complete. Checked {servers} servers and sent {deals} alerts in total.",
+        "search_complete": "✅ Search complete. Checked {targets} targets and sent {deals} alerts in total.",
         "no_permissions": "❌ You don't have permissions to use this here.",
         "country_set": "✅ Region correctly configured to: **{country}**",
         "alerts_stopped": "⏹️ Notifications stopped and your data has been deleted."

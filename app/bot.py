@@ -78,6 +78,11 @@ class SteamDealsBot(commands.Bot):
         print(f"Logged in as {self.user} (ID: {self.user.id})")
         print(f"Connected to {len(self.guilds)} guilds")
 
+    async def on_guild_remove(self, guild: discord.Guild):
+        """Auto-delete server data when the bot is kicked or removed."""
+        await database.stop_notifications(str(guild.id))
+        print(f"Bot removed from guild {guild.id} — data deleted.")
+
 def get_target_id(interaction: discord.Interaction) -> tuple[str, bool]:
     if interaction.guild_id:
         return str(interaction.guild_id), False
@@ -232,7 +237,7 @@ async def deals(interaction: discord.Interaction):
     stats = await checker.check_and_notify(bot)
     
     await interaction.followup.send(
-        get_text("search_complete", interaction.locale, servers=stats['servers_checked'], deals=stats['total_deals_sent'])
+        get_text("search_complete", interaction.locale, targets=stats['targets_checked'], deals=stats['total_deals_sent'])
     )
 
 @bot.tree.command(name="history", description="Muestra el historial de precios registrado para un juego")

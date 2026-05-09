@@ -110,11 +110,17 @@ async def check_and_notify(bot) -> dict:
                 embed = make_deal_embed(deal, locale=locale)
                 await channel.send(embed=embed)
                 await database.mark_as_notified(target_id, deal["app_id"])
+                if is_dm:
+                    await database.reset_failed_dm_attempts(target_id)
                 total_deals_sent += 1
-            except Exception:
-                pass
+            except Exception as e:
+                if is_dm and "Cannot send messages" in str(e) or "Forbidden" in str(e):
+                    attempts = await database.increment_failed_dm_attempts(target_id)
+                    if attempts >= 3:
+                        await database.stop_notifications(target_id)
+                        break
                 
     return {
-        "servers_checked": len(targets),
+        "targets_checked": len(targets),
         "total_deals_sent": total_deals_sent
     }

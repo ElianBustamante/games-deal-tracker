@@ -55,6 +55,11 @@ async def init_db() -> None:
         except sqlite3.OperationalError:
             pass
 
+        try:
+            await db.execute("ALTER TABLE server_config ADD COLUMN failed_dm_attempts INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+
         
         await db.execute('''
             CREATE TABLE IF NOT EXISTS notified_deals (
@@ -266,3 +271,26 @@ async def get_price_history(app_id: int, currency: str, limit: int = 10) -> list
             "discount_percent": row["discount_percent"],
             "recorded_at": row["recorded_at"]
         } for row in rows]
+
+async def increment_failed_dm_attempts(target_id: str) -> int:
+    async with await connect_db() as db:
+        await db.execute(
+            "UPDATE server_config SET failed_dm_attempts = failed_dm_attempts + 1 WHERE server_id = ?",
+            (target_id,)
+        )
+        await db.commit()
+        cursor = await db.execute(
+            "SELECT failed_dm_attempts FROM server_config WHERE server_id = ?",
+            (target_id,)
+        )
+        row = await cursor.fetchone()
+        return row[0] if row else 0
+
+
+async def reset_failed_dm_attempts(target_id: str) -> None:
+    async with await connect_db() as db:
+        await db.execute(
+            "UPDATE server_config SET failed_dm_attempts = 0 WHERE server_id = ?",
+            (target_id,)
+        )
+        await db.commit()
