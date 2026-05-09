@@ -81,8 +81,10 @@ Free, takes 1–5 business days.
 ### PebbleHost (Recommended)
 
 1. Purchase a Bot Hosting plan at pebblehost.com.
-2. In the PebbleHost panel, go to the Console and run: `git clone https://github.com/ElianBustamante/steam-deal-tracker.git .`
-3. Create a `.env` file via the File Manager with your `DISCORD_TOKEN`.
+2. Deploy the code using **one of these two methods**:
+   - **Via Git (recommended):** In the panel, go to the **Git** tab, enter your repository URL (`https://github.com/ElianBustamante/steam-deal-tracker.git`) and click Pull. Note: `git clone` does NOT work directly from the Console.
+   - **Via File Upload:** Compress your local project folder as a `.zip`, upload it through the **File Manager**, and extract it there.
+3. Create a `.env` file via the File Manager with your `DISCORD_TOKEN` (use `.env.example` as reference).
 4. Make sure the Startup File is set to `main.py` and click Start.
 
 ### Oracle Cloud Free Tier (Best free alternative)
