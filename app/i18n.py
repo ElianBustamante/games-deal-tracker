@@ -50,10 +50,10 @@ COMMAND_TRANSLATIONS = {
 
 DESCRIPTION_TRANSLATIONS = {
     "Gestiona la lista de deseados": {
-        discord.Locale.american_english: "Manage the server's watchlist",
-        discord.Locale.british_english: "Manage the server's watchlist",
+        discord.Locale.american_english: "Manage the watchlist",
+        discord.Locale.british_english: "Manage the watchlist",
     },
-    "Añade un juego a la lista de seguimiento del servidor": {
+    "Añade un juego a la lista de seguimiento": {
         discord.Locale.american_english: "Add a game to the watchlist",
         discord.Locale.british_english: "Add a game to the watchlist",
     },
@@ -150,7 +150,7 @@ UI_TEXT = {
         "removed_from_list": "✅ Se eliminó **{name}** de la lista.",
         "not_in_list": "No encontré ese juego en tu lista.",
         "list_empty": "La lista está vacía.",
-        "watchlist_title": "🎮 Lista de deseados del servidor",
+        "watchlist_title": "🎮 Lista de deseados",
         "status": "Estado",
         "status_discount": "-{discount}% descuento",
         "status_no_discount": "Sin descuento",
@@ -183,7 +183,7 @@ UI_TEXT = {
         "removed_from_list": "✅ Removed **{name}** from the list.",
         "not_in_list": "I couldn't find that game on your list.",
         "list_empty": "The list is empty.",
-        "watchlist_title": "🎮 Server Watchlist",
+        "watchlist_title": "🎮 Watchlist",
         "status": "Status",
         "status_discount": "{discount}% off",
         "status_no_discount": "No discount",

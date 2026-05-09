@@ -95,7 +95,7 @@ bot = SteamDealsBot()
 
 watchlist_group = app_commands.Group(name="watchlist", description="Gestiona la lista de deseados")
 
-@watchlist_group.command(name="add", description="Añade un juego a la lista de seguimiento del servidor")
+@watchlist_group.command(name="add", description="Añade un juego a la lista de seguimiento")
 @app_commands.describe(game="Nombre del juego")
 async def watchlist_add(interaction: discord.Interaction, game: str):
     await interaction.response.defer(ephemeral=True)
