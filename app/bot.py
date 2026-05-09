@@ -79,7 +79,6 @@ class SteamDealsBot(commands.Bot):
         print(f"Connected to {len(self.guilds)} guilds")
 
     async def on_guild_remove(self, guild: discord.Guild):
-        """Auto-delete server data when the bot is kicked or removed."""
         await database.stop_notifications(str(guild.id))
         print(f"Bot removed from guild {guild.id} — data deleted.")
 
@@ -88,7 +87,7 @@ def get_target_id(interaction: discord.Interaction) -> tuple[str, bool]:
         return str(interaction.guild_id), False
     return str(interaction.user.id), True
 
-async def ensure_dm_setup(interaction: discord.Interaction, target_id: str, is_dm: bool):
+async def ensure_dm_setup(target_id: str, is_dm: bool):
     if is_dm:
         await database.set_channel(target_id, target_id, is_dm=True)
 
@@ -102,7 +101,7 @@ async def watchlist_add(interaction: discord.Interaction, game: str):
     await interaction.response.defer(ephemeral=True)
     
     target_id, is_dm = get_target_id(interaction)
-    await ensure_dm_setup(interaction, target_id, is_dm)
+    await ensure_dm_setup(target_id, is_dm)
     
     search_result = await steam.search_game(game)
     
@@ -186,7 +185,7 @@ async def setdiscount(interaction: discord.Interaction, porcentaje: int):
         await interaction.response.send_message(get_text("invalid_percent", interaction.locale), ephemeral=True)
         return
         
-    await ensure_dm_setup(interaction, target_id, is_dm)
+    await ensure_dm_setup(target_id, is_dm)
     await database.set_min_discount(target_id, porcentaje)
     await interaction.response.send_message(get_text("discount_set", interaction.locale, percent=porcentaje), ephemeral=True)
 
@@ -202,7 +201,7 @@ async def setlanguage(interaction: discord.Interaction, lang: str):
         await interaction.response.send_message(get_text("no_permissions", interaction.locale), ephemeral=True)
         return
         
-    await ensure_dm_setup(interaction, target_id, is_dm)
+    await ensure_dm_setup(target_id, is_dm)
     await database.set_language(target_id, lang)
     # Give confirmation in the language they just selected
     await interaction.response.send_message(get_text("language_set", lang), ephemeral=True)
@@ -216,7 +215,7 @@ async def setcountry(interaction: discord.Interaction, country: str):
         await interaction.response.send_message(get_text("no_permissions", interaction.locale), ephemeral=True)
         return
         
-    await ensure_dm_setup(interaction, target_id, is_dm)
+    await ensure_dm_setup(target_id, is_dm)
     await database.set_country(target_id, country)
     await interaction.response.send_message(get_text("country_set", interaction.locale, country=country.upper()), ephemeral=True)
 
@@ -262,7 +261,7 @@ async def history(interaction: discord.Interaction, game: str):
     
     price_history = await database.get_price_history(app_id, currency, limit=10)
     
-    embed = make_history_embed(app_id, search_result["name"], price_history, currency, locale=interaction.locale)
+    embed = make_history_embed(search_result["name"], price_history, currency, locale=interaction.locale)
     await interaction.followup.send(embed=embed)
 
 def run():

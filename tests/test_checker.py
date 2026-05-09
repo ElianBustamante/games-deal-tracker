@@ -100,8 +100,13 @@ async def test_check_general_deals_filters_min_discount(mock_db, mock_steam):
     mock_db["get_min_discount"].return_value = 40
     mock_db["was_notified_today"].return_value = False
     mock_db["get_historical_low"].return_value = None
-    
-    result = await check_general_deals("server1", deals)
-    
+    # get_game_price returns the validated deal (not adult content)
+    mock_steam["get_game_price"].return_value = {
+        "app_id": 1, "name": "Game 1", "price_final": 500,
+        "price_original": 1000, "discount_percent": 50, "currency": "USD"
+    }
+
+    result = await check_general_deals("server1", deals, "us")
+
     assert len(result) == 1
     assert result[0]["app_id"] == 1

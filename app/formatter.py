@@ -69,7 +69,7 @@ def make_deal_embed(game: dict, locale: str = "es") -> discord.Embed:
     
     return embed
 
-def make_history_embed(app_id: int, game_name: str, history: list[dict], currency: str = "USD", locale: str = "es") -> discord.Embed:
+def make_history_embed(game_name: str, history: list[dict], currency: str = "USD", locale: str = "es") -> discord.Embed:
     embed = discord.Embed(
         title=get_text("history_title", locale, game_name=game_name),
         color=discord.Color.blurple()

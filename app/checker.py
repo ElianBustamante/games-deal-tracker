@@ -46,16 +46,20 @@ async def check_watchlist(target_id: str, country: str) -> list[dict]:
         
     return enriched_results
 
-async def check_general_deals(target_id: str, deals: list[dict]) -> list[dict]:
+async def check_general_deals(target_id: str, deals: list[dict], country: str) -> list[dict]:
     min_discount = await database.get_min_discount(target_id)
     enriched_results = []
-    
+
     for deal in deals:
         if deal.get("discount_percent", 0) >= min_discount:
             if not await database.was_notified_today(target_id, deal["app_id"]):
-                enriched = await save_and_enrich(deal)
+                # Re-fetch via appdetails to apply content_descriptors filter
+                validated = await steam.get_game_price(deal["app_id"], country)
+                if validated is None:
+                    continue
+                enriched = await save_and_enrich(validated)
                 enriched_results.append(enriched)
-                
+
     return enriched_results
 
 async def check_and_notify(bot) -> dict:
@@ -93,7 +97,7 @@ async def check_and_notify(bot) -> dict:
         deals = featured_deals_cache.get((country, language), [])
         
         watchlist_deals = await check_watchlist(target_id, country)
-        general_deals = await check_general_deals(target_id, deals)
+        general_deals = await check_general_deals(target_id, deals, country)
         
         # Combine and deduplicate
         deals_by_app_id = {}

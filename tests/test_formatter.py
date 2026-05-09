@@ -63,6 +63,6 @@ def test_history_field_not_historical_low():
     assert "Mínimo registrado" in embed.fields[2].value
 
 def test_make_history_embed_empty():
-    embed = make_history_embed(1, "Game", [])
+    embed = make_history_embed("Game", [])
     assert len(embed.fields) == 1
     assert embed.fields[0].value == "Sin historial registrado aún"
