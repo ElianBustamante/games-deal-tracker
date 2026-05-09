@@ -21,9 +21,15 @@ async def search_game(name: str, country: str = STEAM_COUNTRY, language: str = S
         pass
     return None
 
+# Steam content descriptor ID 3 = Adult Only Sexual Content (explicit/pornographic)
+_ADULT_DESCRIPTOR_IDS = {3}
+
 async def get_game_price(app_id: int, country: str = STEAM_COUNTRY) -> dict | None:
-    # Using filters=basic,price_overview to ensure we get the game name along with price
-    url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&cc={country}&filters=basic,price_overview"
+    # Filters include content_descriptors to detect adult sexual content
+    url = (
+        f"https://store.steampowered.com/api/appdetails"
+        f"?appids={app_id}&cc={country}&filters=basic,price_overview,content_descriptors"
+    )
     try:
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
             async with session.get(url) as response:
@@ -32,6 +38,12 @@ async def get_game_price(app_id: int, country: str = STEAM_COUNTRY) -> dict | No
                     app_str = str(app_id)
                     if data and data.get(app_str) and data[app_str].get("success"):
                         app_data = data[app_str].get("data", {})
+                        # Skip games with nudity/sexual content descriptors
+                        descriptor_ids = set(
+                            app_data.get("content_descriptors", {}).get("ids", [])
+                        )
+                        if descriptor_ids & _ADULT_DESCRIPTOR_IDS:
+                            return None
                         if "price_overview" in app_data:
                             po = app_data["price_overview"]
                             return {
@@ -60,6 +72,9 @@ async def get_featured_deals(country: str = STEAM_COUNTRY, language: str = STEAM
                             if isinstance(category_data, dict) and "items" in category_data:
                                 for item in category_data["items"]:
                                     app_id = item.get("id")
+                                    # Skip adult-only content (type 13 = adults only on Steam)
+                                    if item.get("type") == 13:
+                                        continue
                                     if app_id not in seen_apps and item.get("discounted"):
                                         seen_apps.add(app_id)
                                         deals.append({
