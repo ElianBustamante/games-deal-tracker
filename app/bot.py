@@ -173,21 +173,21 @@ async def setchannel(interaction: discord.Interaction, channel: discord.TextChan
     await interaction.response.send_message(get_text("alerts_channel_set", interaction.locale, mention=channel.mention), ephemeral=True)
 
 @bot.tree.command(name="setdiscount", description="Configura el descuento mínimo % para alertas generales")
-@app_commands.describe(porcentaje="Porcentaje (1-100)")
-async def setdiscount(interaction: discord.Interaction, porcentaje: int):
+@app_commands.describe(percent="Porcentaje (1-100)")
+async def setdiscount(interaction: discord.Interaction, percent: int):
     target_id, is_dm = get_target_id(interaction)
     
     if not is_dm and not interaction.permissions.manage_channels:
         await interaction.response.send_message(get_text("no_permissions", interaction.locale), ephemeral=True)
         return
         
-    if porcentaje < 1 or porcentaje > 100:
+    if percent < 1 or percent > 100:
         await interaction.response.send_message(get_text("invalid_percent", interaction.locale), ephemeral=True)
         return
         
     await ensure_dm_setup(target_id, is_dm)
-    await database.set_min_discount(target_id, porcentaje)
-    await interaction.response.send_message(get_text("discount_set", interaction.locale, percent=porcentaje), ephemeral=True)
+    await database.set_min_discount(target_id, percent)
+    await interaction.response.send_message(get_text("discount_set", interaction.locale, percent=percent), ephemeral=True)
 
 @bot.tree.command(name="setlanguage", description="Configura el idioma para las alertas automáticas")
 @app_commands.describe(lang="Idioma (en o es)")
