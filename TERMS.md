@@ -6,7 +6,7 @@ By inviting and using the Steam Deal Tracker bot in your Discord server or via D
 
 ## 1. Description of service
 
-Steam Deal Tracker is a utility bot that monitors the Steam public API to provide automated alerts about video game discounts, price histories, and watchlist updates.
+Steam Deal Tracker is a utility bot that monitors the Steam public API to provide automated alerts about video game discounts, price histories, and watchlist updates. To ensure a Safe for Work (SFW) environment for all Discord servers, the bot strictly filters out and ignores games categorized as explicit or pornographic adult content by Steam.
 
 ## 2. Usage restrictions
 

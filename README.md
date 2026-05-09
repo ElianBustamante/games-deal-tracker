@@ -13,6 +13,7 @@ Builds its own price history over time to identify all-time low prices.
 - **Native Localization (i18n)**: Automatically translates slash commands and bot responses into Spanish or English based on your Discord app settings.
 - **Price History**: Tracks historical lows across multiple currencies dynamically.
 - **Privacy-First**: Data is automatically deleted when the bot is removed from a server, after 3 failed DM deliveries, or instantly via `/stop`.
+- **Safe for Work (SFW)**: Automatically filters out explicit, pornographic, and "Adults Only" games from Steam deals and the watchlist.
 
 ## How price history works
 

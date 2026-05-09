@@ -16,6 +16,7 @@ The bot only collects the minimum amount of data required to function properly. 
 
 - **Message Content:** The bot does NOT read, store, or process the content of user messages. We use Discord's Slash Commands exclusively.
 - **Personal Information:** We do not collect names, emails, passwords, or any identifiable personal information outside of your public Discord User ID.
+- **Explicit Content Interests:** The bot automatically blocks and filters out explicit adult and pornographic games. We do not process, track, or store watchlist additions related to this type of content.
 
 ## 3. How we use your information
 
