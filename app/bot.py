@@ -93,7 +93,12 @@ async def ensure_dm_setup(target_id: str, is_dm: bool):
 
 bot = SteamDealsBot()
 
-watchlist_group = app_commands.Group(name="watchlist", description="Gestiona la lista de deseados")
+watchlist_group = app_commands.Group(
+    name="watchlist", 
+    description="Gestiona la lista de deseados",
+    allowed_installs=app_commands.AppInstallationType(guild=True, user=True),
+    allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True)
+)
 
 @watchlist_group.command(name="add", description="Añade un juego a la lista de seguimiento")
 @app_commands.describe(game="Nombre del juego")
@@ -164,6 +169,8 @@ async def watchlist_show(interaction: discord.Interaction):
 bot.tree.add_command(watchlist_group)
 
 @bot.tree.command(name="setchannel", description="Configura el canal donde se enviarán las alertas")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.guild_only()
 @app_commands.describe(channel="El canal para las alertas")
 @app_commands.checks.has_permissions(manage_channels=True)
@@ -173,6 +180,8 @@ async def setchannel(interaction: discord.Interaction, channel: discord.TextChan
     await interaction.response.send_message(get_text("alerts_channel_set", interaction.locale, mention=channel.mention), ephemeral=True)
 
 @bot.tree.command(name="setdiscount", description="Configura el descuento mínimo % para alertas generales")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(percent="Porcentaje (1-100)")
 async def setdiscount(interaction: discord.Interaction, percent: int):
     target_id, is_dm = get_target_id(interaction)
@@ -190,6 +199,8 @@ async def setdiscount(interaction: discord.Interaction, percent: int):
     await interaction.response.send_message(get_text("discount_set", interaction.locale, percent=percent), ephemeral=True)
 
 @bot.tree.command(name="setlanguage", description="Configura el idioma para las alertas automáticas")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(lang="Idioma (en o es)")
 @app_commands.choices(lang=[
     app_commands.Choice(name="English", value="en"),
@@ -207,6 +218,8 @@ async def setlanguage(interaction: discord.Interaction, lang: str):
     await interaction.response.send_message(get_text("language_set", lang), ephemeral=True)
 
 @bot.tree.command(name="setcountry", description="Configura el país para obtener precios locales de Steam")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(country="Nombre del país")
 @app_commands.autocomplete(country=country_autocomplete)
 async def setcountry(interaction: discord.Interaction, country: str):
@@ -220,6 +233,8 @@ async def setcountry(interaction: discord.Interaction, country: str):
     await interaction.response.send_message(get_text("country_set", interaction.locale, country=country.upper()), ephemeral=True)
 
 @bot.tree.command(name="stop", description="Detiene las notificaciones y borra tus datos")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def stop_alerts(interaction: discord.Interaction):
     target_id, is_dm = get_target_id(interaction)
     if not is_dm and not interaction.permissions.manage_channels:
@@ -230,6 +245,8 @@ async def stop_alerts(interaction: discord.Interaction):
     await interaction.response.send_message(get_text("alerts_stopped", interaction.locale), ephemeral=True)
 
 @bot.tree.command(name="deals", description="Busca ofertas manualmente en este momento")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def deals(interaction: discord.Interaction):
     await interaction.response.send_message(get_text("searching", interaction.locale))
     
@@ -240,6 +257,8 @@ async def deals(interaction: discord.Interaction):
     )
 
 @bot.tree.command(name="history", description="Muestra el historial de precios registrado para un juego")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(game="Nombre del juego")
 async def history(interaction: discord.Interaction, game: str):
     await interaction.response.defer()

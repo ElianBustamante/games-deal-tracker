@@ -1,102 +1,90 @@
 # Steam Deals Bot
 
-## What it does
+A Discord bot that monitors Steam deals and posts alerts to configured channels or private Direct Messages. It tracks per-server/per-user watchlists, monitors general deals above a discount threshold, and builds its own price history to identify all-time low prices.
 
-Discord bot that monitors Steam deals and posts alerts to a configured channel or private Direct Messages (DMs).
-Tracks a per-server/per-user watchlist and general deals above a configurable discount threshold.
-Builds its own price history over time to identify all-time low prices.
+---
 
-## Features
+## Key Features
 
 - **Hybrid Architecture**: Supports both Server channels and Private DMs.
 - **Global Multi-Region**: Monitors prices in over 40 countries, displaying deals in your local currency.
 - **Native Localization (i18n)**: Automatically translates slash commands and bot responses into Spanish or English based on your Discord app settings.
-- **Price History**: Tracks historical lows across multiple currencies dynamically.
+- **Price History**: Tracks historical lows across multiple currencies dynamically to identify true all-time low prices.
 - **Privacy-First**: Data is automatically deleted when the bot is removed from a server, after 3 failed DM deliveries, or instantly via `/stop`.
 - **Safe for Work (SFW)**: Automatically filters out explicit, pornographic, and "Adults Only" games from Steam deals and the watchlist.
 
-## How price history works
-
-Steam's public API only provides current prices.
-This bot saves a price snapshot on every check and uses that data to determine
-whether the current deal is the best price it has ever recorded.
-
-## Requirements
-
-Python 3.11+, a Discord bot token, no external API keys needed.
+---
 
 ## Tech Stack
 
-- **Language**: Python 3.11+
-- **Discord API**: `discord.py`
-- **HTTP Client**: `aiohttp` (for async Steam API requests)
-- **Database**: SQLite via `aiosqlite` (async)
-- **Task Scheduling**: `apscheduler` (Cron-based triggers)
-- **Environment**: `python-dotenv`
-- **Testing**:
-  - `pytest` (Test runner)
-  - `pytest-asyncio` (Async testing support)
-  - `pytest-mock` (Mocking API responses and DB connections)
+- **Python 3.11+** & **discord.py** (Bot Framework)
+- **aiohttp** (Async HTTP Client for Steam API requests)
+- **SQLite** & **aiosqlite** (Async Database for configurations, watchlists, and price history)
+- **apscheduler** (Cron-based task scheduling)
+- **pytest**, **pytest-asyncio** & **pytest-mock** (Testing suite)
 
-## Setup
+---
 
-### 1. Create the Discord bot
+## Setup & Installation
 
-- discord.com/developers/applications → New Application → Bot → Reset Token
-- Privileged Gateway Intents: leave all OFF
-- OAuth2 → URL Generator:
-  Scopes: bot, applications.commands
-  Permissions: Send Messages, Embed Links, Use Slash Commands
-- Open the generated invite URL to add the bot to your server
+### 1. Discord Bot Setup
 
-### 2. Install and run
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) → New Application → Bot → Reset Token.
+2. Under **Privileged Gateway Intents**, leave all options OFF.
+3. Go to the **Installation** tab and ensure both **Guild Install** and **User Install** are checked.
+   - For **User Install** Scopes, select ONLY `applications.commands`.
+   - Use the **Discord Provided Link** to invite the bot to servers or personal accounts.
 
-git clone → pip install -r requirements.txt
-cp .env.example .env → fill in DISCORD_TOKEN
+### 2. Running Locally
+
+```bash
+git clone https://github.com/ElianBustamante/steam-deal-tracker.git
+cd steam-deal-tracker
+python -m venv .venv
+
+# Activate virtual environment
+source .venv/bin/activate  # Linux/macOS
+.\.venv\Scripts\activate   # Windows
+
+pip install -r requirements.txt
+cp .env.example .env       # Fill in your DISCORD_TOKEN
 python main.py
+```
 
-### 3. Configure in Discord
+---
 
-/setchannel #your-channel (Only for servers)
-/setdiscount 60
-/setcountry Chile
-/setlanguage es
-/watchlist add Cyberpunk 2077
-/stop (To pause alerts and wipe your data)
+## Discord Commands
 
-## Adding to more servers
+- `/setchannel` - Set the channel where alerts will be sent (Servers only).
+- `/setdiscount` - Set the minimum % discount for general alerts.
+- `/setlanguage` - Set the bot response language (en/es).
+- `/setcountry` - Set the Steam country region to get local currency prices.
+- `/watchlist add` | `remove` | `show` - Manage your monitored games.
+- `/history` - Show the recorded price history for a specific game.
+- `/deals` - Search for deals manually right now.
+- `/stop` - Stop notifications and delete all your data instantly.
 
-Use the same invite link. Each server configures its own channel and thresholds.
-Price history is shared globally — data accumulates regardless of which server or user
-is watching a game. Users can also just DM the bot directly to get private alerts!
+---
 
-## Discord Bot Verification
-
-Works on up to 75 servers without verification.
-To scale beyond that: discord.com/developers → your app → Bot → Verify
-Prepare: use case description, privacy policy URL, short demo video.
-Free, takes 1–5 business days.
-
-## Hosting
+## Hosting Options
 
 ### PebbleHost (Recommended)
 
 1. Purchase a Bot Hosting plan at pebblehost.com.
-2. Deploy the code using **one of these two methods**:
-   - **Via Git (recommended):** In the panel, go to the **Git** tab, enter your repository URL (`https://github.com/ElianBustamante/steam-deal-tracker.git`) and click Pull. Note: `git clone` does NOT work directly from the Console.
-   - **Via File Upload:** Compress your local project folder as a `.zip`, upload it through the **File Manager**, and extract it there.
-3. Create a `.env` file via the File Manager with your `DISCORD_TOKEN` (use `.env.example` as reference).
-4. Make sure the Startup File is set to `main.py` and click Start.
+2. Deploy via the **Git tab** (Pull from repository URL) OR via **File Upload** (Upload project `.zip` and extract).
+3. Create a `.env` file via File Manager with your `DISCORD_TOKEN`.
+4. Set the Startup File to `main.py` and start the server.
 
-### Oracle Cloud Free Tier (Best free alternative)
+### Oracle Cloud Free Tier
 
-cloud.oracle.com/free → Ubuntu 22.04 ARM instance → SSH in:
-sudo apt update && sudo apt install python3.11 python3.11-venv python3-pip git -y
-git clone {repo} && cd steam-deal-tracker
-python3.11 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt && cp .env.example .env && nano .env
-nohup python main.py &   (or set up systemd for auto-restart)
+Deploy an Ubuntu 22.04 ARM instance, SSH into the machine, install Python 3.11+, clone the repository, install dependencies, and run via `nohup python main.py &` (or set up a systemd service).
 
 ### Self-Hosting
 
-Can be hosted on any Raspberry Pi or old PC. Just install Python 3.11+ and run `main.py`.
+Can be hosted on any Raspberry Pi or PC. Ensure Python 3.11+ is installed and run `main.py`.
+
+---
+
+## Discord Bot Verification
+
+The bot works seamlessly on up to 75 servers without verification. To scale beyond that, visit the Developer Portal and submit a Verification request. Prepare a use case description, privacy policy URL (found in this repository), and a short demo video.
