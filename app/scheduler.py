@@ -19,7 +19,7 @@ async def scheduled_check():
     logger.info("Starting scheduled deal check...")
     try:
         stats = await check_and_notify(bot)
-        logger.info(f"Check completed successfully. Checked {stats['servers_checked']} servers, sent {stats['total_deals_sent']} alerts.")
+        logger.info(f"Check completed successfully. Checked {stats['targets_checked']} targets, sent {stats['total_deals_sent']} alerts.")
     except Exception as e:
         logger.error(f"Error during scheduled deal check: {e}", exc_info=True)
 
