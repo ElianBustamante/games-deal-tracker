@@ -3,6 +3,7 @@ aiohttp
 aiosqlite
 apscheduler
 python-dotenv
+cachetools
 pytest
 pytest-asyncio
 pytest-mock

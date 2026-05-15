@@ -1,6 +1,7 @@
 import os
 import aiohttp
 from dotenv import load_dotenv
+from cachetools import TTLCache
 
 load_dotenv()
 
@@ -20,6 +21,34 @@ async def search_game(name: str, country: str = STEAM_COUNTRY, language: str = S
     except Exception:
         pass
     return None
+
+# Cache for autocomplete searches. 2000 items, expires after 1 hour (3600 seconds)
+autocomplete_cache = TTLCache(maxsize=2000, ttl=3600)
+
+async def search_game_autocomplete(term: str, country: str = STEAM_COUNTRY, language: str = STEAM_LANGUAGE) -> list[dict]:
+    term = term.strip().lower()
+    if len(term) < 3:
+        return []
+        
+    cache_key = f"{term}_{language}_{country}"
+    if cache_key in autocomplete_cache:
+        return autocomplete_cache[cache_key]
+        
+    url = f"https://store.steampowered.com/api/storesearch/?term={term}&l={language}&cc={country}"
+    results = []
+    try:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5)) as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if data and data.get("items"):
+                        # Discord allows max 25 choices
+                        for item in data["items"][:25]:
+                            results.append({"app_id": item.get("id"), "name": item.get("name")})
+                        autocomplete_cache[cache_key] = results
+    except Exception:
+        pass
+    return results
 
 # Steam content descriptor ID 3 = Adult Only Sexual Content (explicit/pornographic)
 _ADULT_DESCRIPTOR_IDS = {3}

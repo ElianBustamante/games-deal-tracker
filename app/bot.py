@@ -93,6 +93,23 @@ async def ensure_dm_setup(target_id: str, is_dm: bool):
 
 bot = SteamDealsBot()
 
+async def game_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    if not current or len(current) < 3:
+        return []
+    
+    target_id, _ = get_target_id(interaction)
+    country = await database.get_country(target_id)
+    language = await database.get_language(target_id)
+    
+    results = await steam.search_game_autocomplete(current, country=country, language=language)
+    
+    choices = []
+    for r in results:
+        name = r["name"][:100]
+        choices.append(app_commands.Choice(name=name, value=name))
+    
+    return choices
+
 watchlist_group = app_commands.Group(
     name="watchlist", 
     description="Gestiona la lista de deseados",
@@ -102,6 +119,7 @@ watchlist_group = app_commands.Group(
 
 @watchlist_group.command(name="add", description="Añade un juego a la lista de seguimiento")
 @app_commands.describe(game="Nombre del juego")
+@app_commands.autocomplete(game=game_autocomplete)
 async def watchlist_add(interaction: discord.Interaction, game: str):
     await interaction.response.defer(ephemeral=True)
     
@@ -122,6 +140,7 @@ async def watchlist_add(interaction: discord.Interaction, game: str):
 
 @watchlist_group.command(name="remove", description="Elimina un juego de la lista de seguimiento")
 @app_commands.describe(game="Nombre del juego")
+@app_commands.autocomplete(game=game_autocomplete)
 async def watchlist_remove(interaction: discord.Interaction, game: str):
     await interaction.response.defer(ephemeral=True)
     
@@ -260,6 +279,7 @@ async def deals(interaction: discord.Interaction):
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.describe(game="Nombre del juego")
+@app_commands.autocomplete(game=game_autocomplete)
 async def history(interaction: discord.Interaction, game: str):
     await interaction.response.defer()
     

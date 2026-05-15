@@ -1,5 +1,5 @@
 import pytest
-from app.steam import search_game, get_game_price, get_featured_deals, get_store_url, get_header_image_url
+from app.steam import search_game, get_game_price, get_featured_deals, get_store_url, get_header_image_url, search_game_autocomplete, autocomplete_cache
 
 class MockResponse:
     def __init__(self, json_data=None, status=200):
@@ -143,6 +143,52 @@ async def test_get_featured_deals_missing_specials(mock_aiohttp_session):
     result = await get_featured_deals()
     
     assert result == []
+
+@pytest.mark.asyncio
+async def test_search_game_autocomplete_success(mock_aiohttp_session):
+    autocomplete_cache.clear()
+    mock_aiohttp_session.status = 200
+    mock_aiohttp_session._json = {
+        "items": [
+            {"id": 1091500, "name": "Cyberpunk 2077"},
+            {"id": 2000, "name": "Cyberpunk 2077 Deluxe"}
+        ]
+    }
+    
+    result = await search_game_autocomplete("cyber")
+    
+    assert len(result) == 2
+    assert result[0]["app_id"] == 1091500
+    assert result[1]["name"] == "Cyberpunk 2077 Deluxe"
+    
+@pytest.mark.asyncio
+async def test_search_game_autocomplete_short_term(mock_aiohttp_session):
+    autocomplete_cache.clear()
+    result = await search_game_autocomplete("ab")
+    assert result == []
+
+@pytest.mark.asyncio
+async def test_search_game_autocomplete_caching(mock_aiohttp_session):
+    autocomplete_cache.clear()
+    mock_aiohttp_session.status = 200
+    mock_aiohttp_session._json = {
+        "items": [{"id": 1, "name": "Cached Game"}]
+    }
+    
+    # First call hits "API"
+    result1 = await search_game_autocomplete("cachetest")
+    assert len(result1) == 1
+    assert result1[0]["name"] == "Cached Game"
+    
+    # Change the mock response
+    mock_aiohttp_session._json = {
+        "items": [{"id": 2, "name": "Different Game"}]
+    }
+    
+    # Second call should return cached data, not the new API data
+    result2 = await search_game_autocomplete("cachetest")
+    assert len(result2) == 1
+    assert result2[0]["name"] == "Cached Game"
 
 def test_get_store_url():
     assert get_store_url(1091500) == "https://store.steampowered.com/app/1091500/"
