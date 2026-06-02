@@ -38,7 +38,7 @@ def make_deal_embed(game: dict, locale: str = "es") -> discord.Embed:
     
     # Add author header
     steam_icon = "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/512px-Steam_icon_logo.svg.png"
-    embed.set_author(name="Steam Deals", icon_url=steam_icon)
+    embed.set_author(name="Steam", icon_url=steam_icon)
     
     price_orig = format_price(game["price_original"], game["currency"])
     price_fin = format_price(game["price_final"], game["currency"])
@@ -142,22 +142,7 @@ def make_epic_deal_embed(game: dict, locale: str = "es") -> discord.Embed:
     if game.get("thumbnail"):
         embed.set_thumbnail(url=game["thumbnail"])
         
-    # Format end date if available
-    end_date_str = ""
-    if game.get("end_date"):
-        try:
-            date_obj = datetime.strptime(game["end_date"][:19], "%Y-%m-%dT%H:%M:%S")
-            end_date_str = date_obj.strftime("%d/%m/%Y")
-        except Exception:
-            end_date_str = game["end_date"]
-            
-    footer_text = get_text("epic_store", locale)
-    if end_date_str:
-        footer_text += f" • {get_text('valid_until', locale, date=end_date_str)}"
-    else:
-        footer_text += f" • {datetime.now().strftime('%d/%m/%Y')}"
-        
-    embed.set_footer(text=footer_text)
+    embed.set_footer(text=f"{get_text('epic_store', locale)} • {datetime.now().strftime('%d/%m/%Y')}")
     
     return embed
 

@@ -18,7 +18,7 @@ def test_embed_is_gold_when_historical_low():
     embed = make_deal_embed(game)
     assert embed.color == discord.Color.gold()
     assert embed.title.startswith("🏆")
-    assert embed.author.name == "Steam Deals"
+    assert embed.author.name == "Steam"
     assert "Steam_icon_logo" in embed.author.icon_url
 
 def test_embed_is_steam_blue_for_discount():
