@@ -40,8 +40,8 @@ A Discord bot that monitors Steam and Epic Games Store (EGS) deals and posts ale
 ### 2. Running Locally
 
 ```bash
-git clone https://github.com/ElianBustamante/steam-deal-tracker.git
-cd steam-deal-tracker
+git clone https://github.com/ElianBustamante/games-deal-tracker.git
+cd games-deal-tracker
 python -m venv .venv
 
 # Activate virtual environment

@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_FILE = "steam_deals.db"
+DB_FILE = "steam_epic_deals.db"
 DEFAULT_MIN_DISCOUNT = int(os.getenv("DEFAULT_MIN_DISCOUNT", "50"))
 
 _test_db_path = None
