@@ -446,7 +446,7 @@ async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str 
                 
                 for el in elements:
                     el_slug = resolve_epic_slug(el)
-                    if el_slug == slug:
+                    if el_slug and slug and el_slug.lower().strip() == slug.lower().strip():
                         price_data = el.get("price", {}).get("totalPrice", {})
                         if not price_data:
                             continue

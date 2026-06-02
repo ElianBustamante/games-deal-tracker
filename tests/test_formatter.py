@@ -2,7 +2,7 @@ import pytest
 import discord
 from app.formatter import make_deal_embed, make_history_embed
 
-def test_embed_is_gold_when_historical_low():
+def test_embed_has_trophy_when_historical_low():
     game = {
         "app_id": 1,
         "name": "Test Game",
@@ -16,7 +16,7 @@ def test_embed_is_gold_when_historical_low():
     }
     
     embed = make_deal_embed(game)
-    assert embed.color == discord.Color.gold()
+    assert embed.color == discord.Color.from_rgb(102, 192, 244)
     assert embed.title.startswith("🏆")
     assert embed.author.name == "Steam"
     assert "Steam.png" in embed.author.icon_url

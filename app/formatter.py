@@ -22,13 +22,11 @@ def make_deal_embed(game: dict, locale: str = "es") -> discord.Embed:
     # Colors and emojis
     if game.get("is_historical_low"):
         emoji = "🏆"
-        color = discord.Color.gold()
+    elif game.get("discount_percent", 0) >= 75:
+        emoji = "🔥"
     else:
-        if game.get("discount_percent", 0) >= 75:
-            emoji = "🔥"
-        else:
-            emoji = "🎮"
-        color = discord.Color.from_rgb(102, 192, 244)  # Steam blue #66c0f4
+        emoji = "🎮"
+    color = discord.Color.from_rgb(102, 192, 244)  # Steam blue #66c0f4
         
     embed = discord.Embed(
         title=f"{emoji} {game.get('name', get_text('unknown_game', locale))}",
@@ -94,10 +92,9 @@ def make_epic_deal_embed(game: dict, locale: str = "es") -> discord.Embed:
     # Emojis and colors
     if game.get("is_historical_low"):
         emoji = "🏆"
-        color = discord.Color.gold()
     else:
         emoji = "🟣"
-        color = 0x9b59b6  # Purple for Epic Games
+    color = 0x9b59b6  # Purple for Epic Games
         
     name = game.get("name") or game.get("title") or get_text("unknown_game", locale)
     url = game.get("url") or (epic.get_store_url(game["slug"]) if game.get("slug") else None)
