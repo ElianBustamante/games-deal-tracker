@@ -159,7 +159,7 @@ async def get_watchlist(server_id: str) -> list[dict]:
         result = []
         for row in rows:
             app_id_val = row["app_id"]
-            if app_id_val.isdigit():
+            if isinstance(app_id_val, str) and app_id_val.isdigit():
                 app_id_val = int(app_id_val)
             result.append({
                 "app_id": app_id_val,
