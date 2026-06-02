@@ -2,9 +2,9 @@ import discord
 from discord import app_commands
 
 COMMAND_TRANSLATIONS = {
-    "setchannel": {
-        discord.Locale.spain_spanish: "fijarcanal",
-        discord.Locale.latin_american_spanish: "fijarcanal",
+    "setsteamchannel": {
+        discord.Locale.spain_spanish: "fijarcanalsteam",
+        discord.Locale.latin_american_spanish: "fijarcanalsteam",
     },
     "setdiscount": {
         discord.Locale.spain_spanish: "fijardescuento",
@@ -81,9 +81,9 @@ DESCRIPTION_TRANSLATIONS = {
         discord.Locale.american_english: "Show all monitored games",
         discord.Locale.british_english: "Show all monitored games",
     },
-    "Configura el canal donde se enviarán las alertas": {
-        discord.Locale.american_english: "Set the channel where alerts will be sent",
-        discord.Locale.british_english: "Set the channel where alerts will be sent",
+    "Configura el canal donde se enviarán las alertas de Steam": {
+        discord.Locale.american_english: "Set the channel where Steam alerts will be sent",
+        discord.Locale.british_english: "Set the channel where Steam alerts will be sent",
     },
     "Configura el descuento mínimo % para alertas generales": {
         discord.Locale.american_english: "Set the minimum % discount for general alerts",
@@ -128,9 +128,9 @@ DESCRIPTION_TRANSLATIONS = {
 }
 
 PARAMETER_TRANSLATIONS = {
-    "El canal para las alertas": {
-        discord.Locale.american_english: "The channel for the alerts",
-        discord.Locale.british_english: "The channel for the alerts",
+    "El canal para las alertas de Steam": {
+        discord.Locale.american_english: "The channel for Steam alerts",
+        discord.Locale.british_english: "The channel for Steam alerts",
     },
     "Porcentaje (1-100)": {
         discord.Locale.american_english: "Percentage (1-100)",
@@ -191,7 +191,7 @@ UI_TEXT = {
         "status_discount": "-{discount}% descuento",
         "status_no_discount": "Sin descuento",
         "added": "Añadido",
-        "alerts_channel_set": "✅ Las alertas se enviarán a {mention}",
+        "alerts_channel_set": "✅ Las alertas de Steam se enviarán a {mention}",
         "invalid_percent": "El porcentaje debe estar entre 1 y 100.",
         "discount_set": "✅ Alertas generales configuradas a mínimo **{percent}%** de descuento.",
         "language_set": "✅ Idioma configurado a **Español**.",
@@ -246,7 +246,7 @@ UI_TEXT = {
         "status_discount": "{discount}% off",
         "status_no_discount": "No discount",
         "added": "Added",
-        "alerts_channel_set": "✅ Alerts will be sent to {mention}",
+        "alerts_channel_set": "✅ Steam alerts will be sent to {mention}",
         "invalid_percent": "The percentage must be between 1 and 100.",
         "discount_set": "✅ General alerts configured for a minimum of **{percent}%** off.",
         "language_set": "✅ Language set to **English**.",

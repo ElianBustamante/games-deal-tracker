@@ -57,7 +57,7 @@ python main.py
 
 ## Discord Commands
 
-- `/setchannel` - Set the channel where Steam deals alerts will be sent (Servers only).
+- `/setsteamchannel` - Set the channel where Steam deals alerts will be sent (Servers only).
 - `/setepicchannel` - Set the channel where Epic Games Store alerts will be sent (falls back to Steam channel if not set).
 - `/setdiscount` - Set the minimum % discount for general alerts.
 - `/setlanguage` - Set the bot response language (en/es).

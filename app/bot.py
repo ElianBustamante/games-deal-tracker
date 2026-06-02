@@ -262,13 +262,13 @@ async def watchlist_show(interaction: discord.Interaction):
 
 bot.tree.add_command(watchlist_group)
 
-@bot.tree.command(name="setchannel", description="Configura el canal donde se enviarán las alertas")
+@bot.tree.command(name="setsteamchannel", description="Configura el canal donde se enviarán las alertas de Steam")
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.guild_only()
-@app_commands.describe(channel="El canal para las alertas")
+@app_commands.describe(channel="El canal para las alertas de Steam")
 @app_commands.checks.has_permissions(manage_channels=True)
-async def setchannel(interaction: discord.Interaction, channel: discord.TextChannel):
+async def setsteamchannel(interaction: discord.Interaction, channel: discord.TextChannel):
     target_id, is_dm = get_target_id(interaction)
     await database.set_channel(target_id, str(channel.id), is_dm=False)
     await interaction.response.send_message(get_text("alerts_channel_set", interaction.locale, mention=channel.mention), ephemeral=True)
