@@ -65,7 +65,7 @@ python main.py
 - `/watchlist add` | `remove` | `show` - Manage your monitored games (supports Steam and Epic Games Store).
 - `/compare` - Compare current prices and histories side-by-side between Steam and Epic.
 - `/history` - Show the recorded price history for a specific game (checks Steam, falls back to Epic).
-- `/deals` - Search for Steam deals manually right now.
+- `/steamdeals` - Search for Steam deals manually right now.
 - `/epicdeals` - Search for Epic Games Store deals manually right now.
 - `/epicfree` - Show the current and upcoming free games from Epic Games Store.
 - `/stop` - Stop notifications and delete all your data instantly.

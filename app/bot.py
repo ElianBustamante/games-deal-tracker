@@ -352,10 +352,10 @@ async def stop_alerts(interaction: discord.Interaction):
     await database.stop_notifications(target_id)
     await interaction.response.send_message(get_text("alerts_stopped", interaction.locale), ephemeral=True)
 
-@bot.tree.command(name="deals", description="Busca ofertas manualmente en este momento")
+@bot.tree.command(name="steamdeals", description="Busca ofertas de Steam manualmente en este momento")
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-async def deals(interaction: discord.Interaction):
+async def steamdeals(interaction: discord.Interaction):
     await interaction.response.send_message(get_text("searching", interaction.locale))
     
     stats = await checker.check_and_notify(bot)

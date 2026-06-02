@@ -10,9 +10,9 @@ COMMAND_TRANSLATIONS = {
         discord.Locale.spain_spanish: "fijardescuento",
         discord.Locale.latin_american_spanish: "fijardescuento",
     },
-    "deals": {
-        discord.Locale.spain_spanish: "ofertas",
-        discord.Locale.latin_american_spanish: "ofertas",
+    "steamdeals": {
+        discord.Locale.spain_spanish: "ofertassteam",
+        discord.Locale.latin_american_spanish: "ofertassteam",
     },
     "history": {
         discord.Locale.spain_spanish: "historial",
@@ -101,9 +101,9 @@ DESCRIPTION_TRANSLATIONS = {
         discord.Locale.american_english: "Stop notifications and delete your data",
         discord.Locale.british_english: "Stop notifications and delete your data",
     },
-    "Busca ofertas manualmente en este momento": {
-        discord.Locale.american_english: "Search for deals manually right now",
-        discord.Locale.british_english: "Search for deals manually right now",
+    "Busca ofertas de Steam manualmente en este momento": {
+        discord.Locale.american_english: "Search for Steam deals manually right now",
+        discord.Locale.british_english: "Search for Steam deals manually right now",
     },
     "Muestra el historial de precios registrado para un juego": {
         discord.Locale.american_english: "Show the recorded price history for a game",
