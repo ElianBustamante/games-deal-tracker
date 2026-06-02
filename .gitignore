@@ -14,7 +14,7 @@ __pycache__/
 .pytest_cache/
 
 # Database
-steam_deals.db
+*.db
 
 # IDEs & OS files
 .vscode/
