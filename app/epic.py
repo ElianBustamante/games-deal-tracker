@@ -339,14 +339,26 @@ async def search_game(name: str, language: str = STEAM_LANGUAGE) -> dict | None:
                 data = response.json()
                 elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
                 if elements:
-                    first = elements[0]
-                    slug = resolve_epic_slug(first)
+                    # Try to find an exact title match (case-insensitive) to avoid matching DLCs or spin-offs
+                    best_match = None
+                    search_clean = name.lower().strip()
+                    for el in elements:
+                        el_title = el.get("title", "")
+                        if el_title.lower().strip() == search_clean:
+                            best_match = el
+                            break
+                            
+                    # Fallback to the first element if no exact match is found
+                    if not best_match:
+                        best_match = elements[0]
+                        
+                    slug = resolve_epic_slug(best_match)
                     if slug:
                         res = {
-                            "title": first.get("title"),
+                            "title": best_match.get("title"),
                             "slug": slug,
-                            "epic_id": first.get("id"),
-                            "namespace": first.get("namespace")
+                            "epic_id": best_match.get("id"),
+                            "namespace": best_match.get("namespace")
                         }
                         search_cache[cache_key] = res
                         return res

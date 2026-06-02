@@ -316,6 +316,40 @@ async def test_search_game_success(mock_aiohttp_session):
     assert result["namespace"] == "egs-cp-ns"
 
 @pytest.mark.asyncio
+async def test_search_game_exact_match(mock_aiohttp_session):
+    mock_aiohttp_session.status = 200
+    mock_aiohttp_session._json = {
+        "data": {
+            "Catalog": {
+                "searchStore": {
+                    "elements": [
+                        {
+                            "title": "Hell Let Loose: Vietnam",
+                            "id": "egs-hll-v",
+                            "namespace": "egs-hll-v-ns",
+                            "urlSlug": "hell-let-loose-vietnam"
+                        },
+                        {
+                            "title": "Hell Let Loose",
+                            "id": "egs-hll",
+                            "namespace": "egs-hll-ns",
+                            "urlSlug": "hell-let-loose"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    
+    result = await search_game("Hell Let Loose")
+    
+    assert result is not None
+    assert result["title"] == "Hell Let Loose"
+    assert result["slug"] == "hell-let-loose"
+    assert result["epic_id"] == "egs-hll"
+    assert result["namespace"] == "egs-hll-ns"
+
+@pytest.mark.asyncio
 async def test_search_game_empty(mock_aiohttp_session):
     mock_aiohttp_session.status = 200
     mock_aiohttp_session._json = {
