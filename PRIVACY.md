@@ -1,16 +1,16 @@
-# Privacy policy for Steam Deal Tracker
+# Privacy policy for Steam & Epic Deal Tracker
 
-Last updated: May 2026
+Last updated: June 2026
 
-Thank you for using the Steam Deal Tracker bot. This Privacy Policy outlines what information we collect, how it is used, and how you can manage or delete your data.
+Thank you for using the Steam & Epic Deal Tracker bot. This Privacy Policy outlines what information we collect, how it is used, and how you can manage or delete your data.
 
 ## 1. Information we collect
 
 The bot only collects the minimum amount of data required to function properly. We store:
 
 - **Discord IDs:** Your Server (Guild) ID, Channel ID, and/or your personal User ID (if you use Direct Messages).
-- **Bot Configuration:** The Steam country (`/setcountry`), language (`/setlanguage`), and minimum discount percentage (`/setdiscount`) you configure.
-- **Watchlist Data:** The Steam App IDs of the games you add to your watchlist (`/watchlist add`).
+- **Bot Configuration:** The country (`/setcountry`), language (`/setlanguage`), and minimum discount percentage (`/setdiscount`) you configure.
+- **Watchlist Data:** The Steam App IDs and/or Epic Games Store slugs of the games you add to your watchlist (`/watchlist add`).
 
 ## 2. Information we do NOT collect
 
@@ -22,8 +22,8 @@ The bot only collects the minimum amount of data required to function properly. 
 
 The collected data is used strictly for:
 
-- Routing Steam price alerts to the correct server channel or private Direct Message.
-- Fetching prices from the Steam API in your preferred local currency.
+- Routing Steam and Epic Games Store price alerts to the correct server channel or private Direct Message.
+- Fetching prices from the Steam and Epic Games Store APIs in your preferred local currency.
 - Translating the bot's responses into your preferred language.
 
 ## 4. Data sharing

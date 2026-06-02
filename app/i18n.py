@@ -45,6 +45,22 @@ COMMAND_TRANSLATIONS = {
     "stop": {
         discord.Locale.spain_spanish: "detener",
         discord.Locale.latin_american_spanish: "detener",
+    },
+    "setepicchannel": {
+        discord.Locale.spain_spanish: "fijarcanalepic",
+        discord.Locale.latin_american_spanish: "fijarcanalepic",
+    },
+    "epicdeals": {
+        discord.Locale.spain_spanish: "ofertasepic",
+        discord.Locale.latin_american_spanish: "ofertasepic",
+    },
+    "epicfree": {
+        discord.Locale.spain_spanish: "epicfree",
+        discord.Locale.latin_american_spanish: "epicfree",
+    },
+    "compare": {
+        discord.Locale.spain_spanish: "comparar",
+        discord.Locale.latin_american_spanish: "comparar",
     }
 }
 
@@ -92,6 +108,22 @@ DESCRIPTION_TRANSLATIONS = {
     "Muestra el historial de precios registrado para un juego": {
         discord.Locale.american_english: "Show the recorded price history for a game",
         discord.Locale.british_english: "Show the recorded price history for a game",
+    },
+    "Configura el canal donde se enviarán las alertas de Epic Games": {
+        discord.Locale.american_english: "Set the channel where Epic Games alerts will be sent",
+        discord.Locale.british_english: "Set the channel where Epic Games alerts will be sent",
+    },
+    "Busca ofertas de Epic Games Store manualmente": {
+        discord.Locale.american_english: "Search for Epic Games Store deals manually",
+        discord.Locale.british_english: "Search for Epic Games Store deals manually",
+    },
+    "Muestra los juegos gratis actuales y futuros de Epic Games Store": {
+        discord.Locale.american_english: "Show the current and upcoming free games from Epic Games Store",
+        discord.Locale.british_english: "Show the current and upcoming free games from Epic Games Store",
+    },
+    "Compara precios e historial de un juego entre Steam y Epic Games": {
+        discord.Locale.american_english: "Compare prices and history of a game between Steam and Epic Games",
+        discord.Locale.british_english: "Compare prices and history of a game between Steam and Epic Games",
     }
 }
 
@@ -115,6 +147,10 @@ PARAMETER_TRANSLATIONS = {
     "Nombre del juego": {
         discord.Locale.american_english: "Game name",
         discord.Locale.british_english: "Game name",
+    },
+    "El canal para las alertas de Epic": {
+        discord.Locale.american_english: "The channel for Epic alerts",
+        discord.Locale.british_english: "The channel for Epic alerts",
     }
 }
 
@@ -163,7 +199,29 @@ UI_TEXT = {
         "search_complete": "✅ Búsqueda completada. Se verificaron {targets} destinos y se enviaron {deals} alertas en total.",
         "no_permissions": "❌ No tienes permisos para usar esto aquí.",
         "country_set": "✅ Región configurada correctamente a: **{country}**",
-        "alerts_stopped": "⏹️ Notificaciones pausadas y datos eliminados de la base de datos."
+        "alerts_stopped": "⏹️ Notificaciones pausadas y datos eliminados de la base de datos.",
+        "epic_deals_title": "🟣 Ofertas Epic Games",
+        "epic_free_title": "🎁 Juegos Gratis — Epic Games",
+        "available_now": "🎮 Disponibles ahora",
+        "coming_soon": "🔜 Próximamente",
+        "ends_on": "Disponible hasta: {date}",
+        "starts_on": "Disponible el: {date}",
+        "free_games_footer": "Los juegos gratis de Epic rotan los jueves",
+        "comparison_title": "⚖️ Comparación de precios — {game_name}",
+        "not_available": "❌ No disponible",
+        "best_price_steam": "💚 Mejor precio ahora: Steam",
+        "best_price_epic": "🟣 Mejor precio ahora: Epic",
+        "best_price_equal": "🟰 Mismo precio en ambas tiendas",
+        "lowest_hist_steam": "📉 Mínimo histórico más bajo registrado: Steam",
+        "lowest_hist_epic": "📉 Mínimo histórico más bajo registrado: Epic",
+        "lowest_hist_equal": "📉 Mismo mínimo histórico registrado en ambas",
+        "epic_store": "Epic Games Store",
+        "no_epic_game": "No encontré ese juego en Epic Games.",
+        "no_game_anywhere": "El juego no fue encontrado en ninguna tienda.",
+        "epic_channel_set": "✅ Alertas de Epic se enviarán a {mention}",
+        "epic_channel_fallback": "ℹ️ Sin canal Epic configurado — se usará el canal de Steam",
+        "searching_epic": "🔍 Buscando ofertas en Epic Games...",
+        "searching_free": "🔍 Buscando juegos gratis en Epic Games..."
     },
     "en": {
         "price": "Price",
@@ -196,7 +254,29 @@ UI_TEXT = {
         "search_complete": "✅ Search complete. Checked {targets} targets and sent {deals} alerts in total.",
         "no_permissions": "❌ You don't have permissions to use this here.",
         "country_set": "✅ Region correctly configured to: **{country}**",
-        "alerts_stopped": "⏹️ Notifications stopped and your data has been deleted."
+        "alerts_stopped": "⏹️ Notifications stopped and your data has been deleted.",
+        "epic_deals_title": "🟣 Epic Games Deals",
+        "epic_free_title": "🎁 Free Games — Epic Games",
+        "available_now": "🎮 Available now",
+        "coming_soon": "🔜 Coming soon",
+        "ends_on": "Available until: {date}",
+        "starts_on": "Available on: {date}",
+        "free_games_footer": "Epic free games rotate on Thursdays",
+        "comparison_title": "⚖️ Price Comparison — {game_name}",
+        "not_available": "❌ Not available",
+        "best_price_steam": "💚 Best price now: Steam",
+        "best_price_epic": "🟣 Best price now: Epic",
+        "best_price_equal": "🟰 Same price in both stores",
+        "lowest_hist_steam": "📉 Lowest historical low recorded: Steam",
+        "lowest_hist_epic": "📉 Lowest historical low recorded: Epic",
+        "lowest_hist_equal": "📉 Same historical low recorded in both",
+        "epic_store": "Epic Games Store",
+        "no_epic_game": "I couldn't find that game on Epic Games.",
+        "no_game_anywhere": "The game was not found on any store.",
+        "epic_channel_set": "✅ Epic alerts will be sent to {mention}",
+        "epic_channel_fallback": "ℹ️ No Epic channel configured — Steam channel will be used",
+        "searching_epic": "🔍 Searching for Epic Games deals...",
+        "searching_free": "🔍 Searching for Epic Games free games..."
     }
 }
 

@@ -82,3 +82,47 @@ async def test_get_historical_low_returns_none_when_no_history():
     app_id = 444
     low = await database.get_historical_low(app_id, "CLP")
     assert low is None
+
+@pytest.mark.asyncio
+async def test_epic_specific_database_operations():
+    # 1. Test set_epic_channel and get_effective_epic_channel
+    server_id = "server_epic"
+    assert await database.get_effective_epic_channel(server_id) is None
+    
+    await database.set_channel(server_id, "steam_ch")
+    assert await database.get_effective_epic_channel(server_id) == "steam_ch"
+    
+    await database.set_epic_channel(server_id, "epic_ch")
+    assert await database.get_effective_epic_channel(server_id) == "epic_ch"
+    
+    # 2. Test update_epic_slug
+    app_id = 12345
+    await database.add_to_watchlist(server_id, app_id, "Multi Game")
+    watchlist1 = await database.get_watchlist(server_id)
+    assert len(watchlist1) == 1
+    assert watchlist1[0]["epic_slug"] is None
+    
+    await database.update_epic_slug(server_id, app_id, "multi-game-epic")
+    watchlist2 = await database.get_watchlist(server_id)
+    assert len(watchlist2) == 1
+    assert watchlist2[0]["epic_slug"] == "multi-game-epic"
+
+    # 3. Test price snapshots and notifier with store parameter and EGS string slugs as app_id
+    epic_slug = "cyberpunk-2077"
+    await database.save_price_snapshot(epic_slug, "Cyberpunk 2077", 2999, 5999, 50, "USD", store="epic")
+    
+    # Check that we can retrieve it by store='epic'
+    low_epic = await database.get_historical_low(epic_slug, "USD", store="epic")
+    assert low_epic is not None
+    assert low_epic["price_final"] == 2999
+    
+    # Check that store='steam' returns None for the same slug
+    low_steam = await database.get_historical_low(epic_slug, "USD", store="steam")
+    assert low_steam is None
+
+    # Test notified deals separated by store
+    assert await database.was_notified_today(server_id, epic_slug, store="epic") is False
+    await database.mark_as_notified(server_id, epic_slug, store="epic")
+    assert await database.was_notified_today(server_id, epic_slug, store="epic") is True
+    assert await database.was_notified_today(server_id, epic_slug, store="steam") is False
+
