@@ -43,8 +43,8 @@ def make_deal_embed(game: dict, locale: str = "es") -> discord.Embed:
     price_orig = format_price(game["price_original"], game["currency"])
     price_fin = format_price(game["price_final"], game["currency"])
     
-    embed.add_field(name=get_text("price", locale), value=f"~~{price_orig}~~ → **{price_fin}**", inline=True)
-    embed.add_field(name=get_text("discount", locale), value=f"-{game['discount_percent']}%", inline=True)
+    embed.add_field(name=get_text("original_price", locale), value=f"~~{price_orig}~~", inline=True)
+    embed.add_field(name=get_text("final_price", locale), value=f"{price_fin} (-{game['discount_percent']}%)", inline=True)
     
     # History
     historical_low = game.get("historical_low")
@@ -118,8 +118,8 @@ def make_epic_deal_embed(game: dict, locale: str = "es") -> discord.Embed:
     price_orig = format_price(price_orig_cents, game["currency"])
     price_fin = format_price(price_fin_cents, game["currency"])
     
-    embed.add_field(name=get_text("price", locale), value=f"~~{price_orig}~~ → **{price_fin}**", inline=True)
-    embed.add_field(name=get_text("discount", locale), value=f"-{game['discount_percent']}%", inline=True)
+    embed.add_field(name=get_text("original_price", locale), value=f"~~{price_orig}~~", inline=True)
+    embed.add_field(name=get_text("final_price", locale), value=f"{price_fin} (-{game['discount_percent']}%)", inline=True)
     
     # History
     historical_low = game.get("historical_low")
@@ -142,7 +142,22 @@ def make_epic_deal_embed(game: dict, locale: str = "es") -> discord.Embed:
     if game.get("thumbnail"):
         embed.set_thumbnail(url=game["thumbnail"])
         
-    embed.set_footer(text=f"{get_text('epic_store', locale)} • {datetime.now().strftime('%d/%m/%Y')}")
+    # Format end date if available
+    end_date_str = ""
+    if game.get("end_date"):
+        try:
+            date_obj = datetime.strptime(game["end_date"][:19], "%Y-%m-%dT%H:%M:%S")
+            end_date_str = date_obj.strftime("%d/%m/%Y")
+        except Exception:
+            end_date_str = game["end_date"]
+            
+    footer_text = get_text("epic_store", locale)
+    if end_date_str:
+        footer_text += f" • {get_text('valid_until', locale, date=end_date_str)}"
+    else:
+        footer_text += f" • {datetime.now().strftime('%d/%m/%Y')}"
+        
+    embed.set_footer(text=footer_text)
     
     return embed
 

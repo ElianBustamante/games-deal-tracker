@@ -85,8 +85,10 @@ def test_make_epic_deal_embed():
     embed = make_epic_deal_embed(game)
     assert embed.color.value == 0x9b59b6
     assert embed.title == "🟣 Epic Game"
-    assert embed.fields[0].name == "Precio"
-    assert embed.fields[0].value == "~~$20.00 USD~~ → **$10.00 USD**"
+    assert embed.fields[0].name == "Precio Original"
+    assert embed.fields[0].value == "~~$20.00 USD~~"
+    assert embed.fields[1].name == "Precio Final"
+    assert embed.fields[1].value == "$10.00 USD (-50%)"
     assert embed.author.name == "Epic Games Store"
     assert "Epic_Games_logo" in embed.author.icon_url
 

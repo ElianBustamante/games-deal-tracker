@@ -225,8 +225,10 @@ UI_TEXT = {
         "view_deal": "Ver Oferta",
         "add_to_watchlist": "Añadir a Deseados",
         "watchlist_added": "✅ Se añadió **{name}** a la lista de deseados.",
-        "already_in_watchlist": "⚠️ Este juego ya está en tu lista de deseados.",
-        "admin_only": "❌ Solo los administradores del servidor pueden añadir juegos a la lista de deseados."
+        "admin_only": "❌ Solo los administradores del servidor pueden añadir juegos a la lista de deseados.",
+        "original_price": "Precio Original",
+        "final_price": "Precio Final",
+        "valid_until": "válido hasta {date}"
     },
     "en": {
         "price": "Price",
@@ -285,8 +287,10 @@ UI_TEXT = {
         "view_deal": "View Deal",
         "add_to_watchlist": "Add to Watchlist",
         "watchlist_added": "✅ Added **{name}** to the watchlist.",
-        "already_in_watchlist": "⚠️ This game is already in your watchlist.",
-        "admin_only": "❌ Only server administrators can add games to the watchlist."
+        "admin_only": "❌ Only server administrators can add games to the watchlist.",
+        "original_price": "Original Price",
+        "final_price": "Final Price",
+        "valid_until": "valid until {date}"
     }
 }
 
