@@ -221,7 +221,12 @@ UI_TEXT = {
         "epic_channel_set": "✅ Alertas de Epic se enviarán a {mention}",
         "epic_channel_fallback": "ℹ️ Sin canal Epic configurado — se usará el canal de Steam",
         "searching_epic": "🔍 Buscando ofertas en Epic Games...",
-        "searching_free": "🔍 Buscando juegos gratis en Epic Games..."
+        "searching_free": "🔍 Buscando juegos gratis en Epic Games...",
+        "view_deal": "Ver Oferta",
+        "add_to_watchlist": "Añadir a Deseados",
+        "watchlist_added": "✅ Se añadió **{name}** a la lista de deseados.",
+        "already_in_watchlist": "⚠️ Este juego ya está en tu lista de deseados.",
+        "admin_only": "❌ Solo los administradores del servidor pueden añadir juegos a la lista de deseados."
     },
     "en": {
         "price": "Price",
@@ -276,7 +281,12 @@ UI_TEXT = {
         "epic_channel_set": "✅ Epic alerts will be sent to {mention}",
         "epic_channel_fallback": "ℹ️ No Epic channel configured — Steam channel will be used",
         "searching_epic": "🔍 Searching for Epic Games deals...",
-        "searching_free": "🔍 Searching for Epic Games free games..."
+        "searching_free": "🔍 Searching for Epic Games free games...",
+        "view_deal": "View Deal",
+        "add_to_watchlist": "Add to Watchlist",
+        "watchlist_added": "✅ Added **{name}** to the watchlist.",
+        "already_in_watchlist": "⚠️ This game is already in your watchlist.",
+        "admin_only": "❌ Only server administrators can add games to the watchlist."
     }
 }
 

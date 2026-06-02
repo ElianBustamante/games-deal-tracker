@@ -405,11 +405,19 @@ async def steamdeals(interaction: discord.Interaction):
         await interaction.followup.send("No encontré ofertas en este momento." if language == "es" else "No deals found at the moment.")
         return
         
-    from app.formatter import make_deal_embed
+    from app.formatter import make_deal_embed, DealView
     # Send directly to the channel where it was called
     for deal in deals_by_app_id.values():
         embed = make_deal_embed(deal, locale=interaction.locale)
-        await interaction.followup.send(embed=embed)
+        epic_slug = deal["epic_price"].get("slug") if deal.get("epic_price") else None
+        view = DealView(
+            store_url=deal["url"],
+            app_id=deal["app_id"],
+            game_name=deal["name"],
+            epic_slug=epic_slug,
+            locale=interaction.locale
+        )
+        await interaction.followup.send(embed=embed, view=view)
 
 @bot.tree.command(name="epicdeals", description="Busca ofertas de Epic Games Store manualmente")
 @app_commands.allowed_installs(guilds=True, users=True)
@@ -457,8 +465,16 @@ async def epicdeals(interaction: discord.Interaction):
         enriched["historical_low"] = historical_low
         enriched["is_historical_low"] = is_historical_low
         
+        from app.formatter import DealView
         embed = make_epic_deal_embed(enriched, locale=interaction.locale)
-        await interaction.followup.send(embed=embed)
+        view = DealView(
+            store_url=enriched["url"],
+            app_id=f"epic:{deal['slug']}",
+            game_name=enriched["name"],
+            epic_slug=deal["slug"],
+            locale=interaction.locale
+        )
+        await interaction.followup.send(embed=embed, view=view)
 
 @bot.tree.command(name="epicfree", description="Muestra los juegos gratis actuales y futuros de Epic Games Store")
 @app_commands.allowed_installs(guilds=True, users=True)

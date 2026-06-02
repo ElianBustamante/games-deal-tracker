@@ -1,3 +1,4 @@
+import pytest
 import discord
 from app.formatter import make_deal_embed, make_history_embed
 
@@ -123,4 +124,83 @@ def test_make_comparison_embed():
     assert embed.fields[0].name == "🟦 Steam"
     assert embed.fields[1].name == "🟣 Epic Games"
     assert "Epic" in embed.footer.text  # Epic is cheaper ($8 vs $10)
+
+def test_deal_view_initialization():
+    from app.formatter import DealView
+    view = DealView(
+        store_url="https://store.url",
+        app_id="12345",
+        game_name="Test Game",
+        epic_slug="test-slug",
+        locale="es"
+    )
+    assert len(view.children) == 2
+    # Verify link button
+    assert view.children[0].label == "Ver Oferta"
+    assert view.children[0].url == "https://store.url"
+    assert view.children[0].style == discord.ButtonStyle.link
+    # Verify watchlist button
+    assert view.children[1].label == "Añadir a Deseados"
+    assert view.children[1].style == discord.ButtonStyle.secondary
+    assert view.children[1].custom_id == "track_12345"
+
+@pytest.mark.asyncio
+async def test_deal_view_callback_admin_success(mocker):
+    from app.formatter import DealView
+    from unittest.mock import AsyncMock, MagicMock
+    mock_add = mocker.patch("app.database.add_to_watchlist", new_callable=AsyncMock, return_value=True)
+    
+    view = DealView(
+        store_url="https://store.url",
+        app_id="12345",
+        game_name="Test Game",
+        epic_slug="test-slug",
+        locale="es"
+    )
+    
+    # Mock interaction
+    interaction = MagicMock(spec=discord.Interaction)
+    interaction.guild = MagicMock()
+    interaction.guild.id = 9999
+    # User has admin permission
+    interaction.user.guild_permissions.administrator = True
+    interaction.response.send_message = AsyncMock()
+    
+    await view.track_callback(interaction)
+    
+    mock_add.assert_called_once_with("9999", "12345", "Test Game", "test-slug")
+    interaction.response.send_message.assert_called_once()
+    args, kwargs = interaction.response.send_message.call_args
+    assert "añadió" in args[0]
+    assert kwargs.get("ephemeral") is True
+
+@pytest.mark.asyncio
+async def test_deal_view_callback_no_admin(mocker):
+    from app.formatter import DealView
+    from unittest.mock import AsyncMock, MagicMock
+    mock_add = mocker.patch("app.database.add_to_watchlist", new_callable=AsyncMock)
+    
+    view = DealView(
+        store_url="https://store.url",
+        app_id="12345",
+        game_name="Test Game",
+        epic_slug="test-slug",
+        locale="es"
+    )
+    
+    # Mock interaction
+    interaction = MagicMock(spec=discord.Interaction)
+    interaction.guild = MagicMock()
+    interaction.guild.id = 9999
+    # User does NOT have admin permission
+    interaction.user.guild_permissions.administrator = False
+    interaction.response.send_message = AsyncMock()
+    
+    await view.track_callback(interaction)
+    
+    mock_add.assert_not_called()
+    interaction.response.send_message.assert_called_once()
+    args, kwargs = interaction.response.send_message.call_args
+    assert "Solo los administradores" in args[0]
+    assert kwargs.get("ephemeral") is True
 

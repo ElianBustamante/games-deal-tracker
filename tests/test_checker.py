@@ -132,7 +132,7 @@ async def test_check_epic_and_notify(mocker):
     class MockChannel:
         def __init__(self):
             self.sent = []
-        async def send(self, embed):
+        async def send(self, embed, *args, **kwargs):
             self.sent.append(embed)
             
     mock_ch = MockChannel()
@@ -171,7 +171,7 @@ async def test_check_epic_free_games(mocker):
     class MockChannel:
         def __init__(self):
             self.sent = []
-        async def send(self, embed):
+        async def send(self, embed, *args, **kwargs):
             self.sent.append(embed)
             
     mock_ch = MockChannel()

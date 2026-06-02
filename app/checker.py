@@ -169,13 +169,29 @@ async def check_and_notify(bot) -> dict:
         for deal in deals_by_app_id.values():
             try:
                 if deal.get("store") == "epic":
-                    from app.formatter import make_epic_deal_embed
+                    from app.formatter import make_epic_deal_embed, DealView
                     embed = make_epic_deal_embed(deal, locale=locale)
-                    await channel.send(embed=embed)
+                    view = DealView(
+                        store_url=deal["url"],
+                        app_id=deal["app_id"],
+                        game_name=deal["name"],
+                        epic_slug=deal.get("slug"),
+                        locale=locale
+                    )
+                    await channel.send(embed=embed, view=view)
                     await database.mark_as_notified(target_id, deal["app_id"], store="epic")
                 else:
+                    from app.formatter import make_deal_embed, DealView
                     embed = make_deal_embed(deal, locale=locale)
-                    await channel.send(embed=embed)
+                    epic_slug = deal["epic_price"].get("slug") if deal.get("epic_price") else None
+                    view = DealView(
+                        store_url=deal["url"],
+                        app_id=deal["app_id"],
+                        game_name=deal["name"],
+                        epic_slug=epic_slug,
+                        locale=locale
+                    )
+                    await channel.send(embed=embed, view=view)
                     await database.mark_as_notified(target_id, deal["app_id"], store="steam")
                     
                 if is_dm:
@@ -270,8 +286,16 @@ async def check_epic_and_notify(bot) -> dict:
             locale = await database.get_language(target_id)
             
             try:
+                from app.formatter import DealView
                 embed = make_epic_deal_embed(enriched, locale=locale)
-                await channel.send(embed=embed)
+                view = DealView(
+                    store_url=enriched["url"],
+                    app_id=f"epic:{deal['slug']}",
+                    game_name=enriched["name"],
+                    epic_slug=deal["slug"],
+                    locale=locale
+                )
+                await channel.send(embed=embed, view=view)
                 await database.mark_as_notified(target_id, deal["slug"], store="epic")
                 if is_dm:
                     await database.reset_failed_dm_attempts(target_id)

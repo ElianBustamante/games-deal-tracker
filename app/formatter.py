@@ -313,3 +313,49 @@ def make_history_embed(game_name: str, history: list[dict], currency: str = "USD
             )
             
     return embed
+
+class DealView(discord.ui.View):
+    def __init__(self, store_url: str, app_id: str, game_name: str, epic_slug: str = None, locale: str = "es", timeout: float = None):
+        super().__init__(timeout=timeout)
+        
+        # 1. Link button to open store page
+        self.add_item(discord.ui.Button(
+            label=get_text("view_deal", locale),
+            url=store_url,
+            style=discord.ButtonStyle.link
+        ))
+        
+        # Details for tracking
+        self.app_id = str(app_id)
+        self.game_name = game_name
+        self.epic_slug = epic_slug
+        self.locale = locale
+        
+        # 2. Watchlist tracking button
+        track_btn = discord.ui.Button(
+            label=get_text("add_to_watchlist", locale),
+            style=discord.ButtonStyle.secondary,
+            custom_id=f"track_{app_id}"
+        )
+        track_btn.callback = self.track_callback
+        self.add_item(track_btn)
+        
+    async def track_callback(self, interaction: discord.Interaction):
+        import app.database as database
+        
+        if interaction.guild:
+            target_id = str(interaction.guild.id)
+            if not interaction.user.guild_permissions.administrator:
+                msg = get_text("admin_only", self.locale)
+                await interaction.response.send_message(msg, ephemeral=True)
+                return
+        else:
+            target_id = str(interaction.user.id)
+            
+        added = await database.add_to_watchlist(target_id, self.app_id, self.game_name, self.epic_slug)
+        if added:
+            msg = get_text("watchlist_added", self.locale, name=self.game_name)
+        else:
+            msg = get_text("already_in_watchlist", self.locale)
+            
+        await interaction.response.send_message(msg, ephemeral=True)
