@@ -19,7 +19,7 @@ def test_embed_is_gold_when_historical_low():
     assert embed.color == discord.Color.gold()
     assert embed.title.startswith("🏆")
     assert embed.author.name == "Steam"
-    assert "Steam_icon_logo" in embed.author.icon_url
+    assert "Steam.png" in embed.author.icon_url
 
 def test_embed_is_steam_blue_for_discount():
     game = {
@@ -90,7 +90,7 @@ def test_make_epic_deal_embed():
     assert embed.fields[1].name == "Precio Final"
     assert embed.fields[1].value == "$10.00 USD (-50%)"
     assert embed.author.name == "Epic Games Store"
-    assert "Epic_Games_logo" in embed.author.icon_url
+    assert "Epic_Games.png" in embed.author.icon_url
 
 def test_make_epic_free_embed():
     from app.formatter import make_epic_free_embed
@@ -99,7 +99,7 @@ def test_make_epic_free_embed():
     embed = make_epic_free_embed(current, upcoming)
     assert embed.title == "🎁 Juegos Gratis — Epic Games"
     assert embed.author.name == "Epic Games Store"
-    assert "Epic_Games_logo" in embed.author.icon_url
+    assert "Epic_Games.png" in embed.author.icon_url
     assert len(embed.fields) == 2
     assert "Free Now" in embed.fields[0].value
     assert "Free Later" in embed.fields[1].value

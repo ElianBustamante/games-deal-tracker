@@ -37,7 +37,7 @@ def make_deal_embed(game: dict, locale: str = "es") -> discord.Embed:
     )
     
     # Add author header
-    steam_icon = "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/512px-Steam_icon_logo.svg.png"
+    steam_icon = "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Steam.png"
     embed.set_author(name="Steam", icon_url=steam_icon)
     
     price_orig = format_price(game["price_original"], game["currency"])
@@ -109,7 +109,7 @@ def make_epic_deal_embed(game: dict, locale: str = "es") -> discord.Embed:
     )
     
     # Add author header
-    epic_icon = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Epic_Games_logo.svg/512px-Epic_Games_logo.svg.png"
+    epic_icon = "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Epic_Games.png"
     embed.set_author(name="Epic Games Store", icon_url=epic_icon)
     
     price_orig_cents = game.get("price_original") or game.get("original_price") or 0
@@ -153,7 +153,7 @@ def make_epic_free_embed(current: list[dict], upcoming: list[dict], locale: str 
     )
     
     # Add author header
-    epic_icon = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Epic_Games_logo.svg/512px-Epic_Games_logo.svg.png"
+    epic_icon = "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Epic_Games.png"
     embed.set_author(name="Epic Games Store", icon_url=epic_icon)
     
     # Available now
