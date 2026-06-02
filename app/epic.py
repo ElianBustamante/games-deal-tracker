@@ -30,16 +30,30 @@ def get_store_url(slug: str) -> str:
 def normalize_epic_price(price_val: int, currency: str) -> int:
     """
     Normalizes Epic Games prices to cents format (matching Steam's convention).
-    Epic returns zero-subunit currencies (CLP, JPY, KRW) in their base unit (e.g. 9990).
-    Steam always returns them multiplied by 100 (999000).
+    Epic returns zero-subunit currencies (JPY, KRW, VND) in their base unit (e.g. 2080).
+    Steam always returns them multiplied by 100 (208000).
     So we multiply Epic zero-subunit currencies by 100.
     """
     if not price_val:
         return 0
     curr_upper = currency.upper()
-    if curr_upper in ["CLP", "JPY", "KRW", "VND", "HUF", "TWD"]:
+    if curr_upper in ["JPY", "KRW", "VND"]:
         return price_val * 100
     return price_val
+
+def resolve_epic_slug(element: dict) -> str | None:
+    mappings = element.get("catalogNs", {}).get("mappings", []) or []
+    for mapping in mappings:
+        if mapping.get("pageType") == "productHome":
+            slug = mapping.get("pageSlug")
+            if slug:
+                return slug
+    for mapping in mappings:
+        slug = mapping.get("pageSlug")
+        if slug:
+            return slug
+    return element.get("productSlug") or element.get("urlSlug")
+
 
 async def get_free_games(country: str = STEAM_COUNTRY, language: str = STEAM_LANGUAGE) -> dict:
     locale = get_epic_locale(language)
@@ -158,6 +172,12 @@ async def get_deals(country: str = STEAM_COUNTRY, min_discount: int = 0, languag
             namespace
             productSlug
             urlSlug
+            catalogNs {
+              mappings {
+                pageSlug
+                pageType
+              }
+            }
             keyImages {
               type
               url
@@ -198,9 +218,10 @@ async def get_deals(country: str = STEAM_COUNTRY, min_discount: int = 0, languag
                 
                 for el in elements:
                     title = el.get("title")
-                    slug = el.get("urlSlug") or el.get("productSlug")
+                    slug = resolve_epic_slug(el)
                     if not slug or not title:
                         continue
+
                         
                     price_data = el.get("price", {}).get("totalPrice", {})
                     if not price_data:
@@ -297,6 +318,12 @@ async def search_game(name: str, language: str = STEAM_LANGUAGE) -> dict | None:
             namespace
             productSlug
             urlSlug
+            catalogNs {
+              mappings {
+                pageSlug
+                pageType
+              }
+            }
           }
         }
       }
@@ -313,7 +340,7 @@ async def search_game(name: str, language: str = STEAM_LANGUAGE) -> dict | None:
                 elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
                 if elements:
                     first = elements[0]
-                    slug = first.get("urlSlug") or first.get("productSlug")
+                    slug = resolve_epic_slug(first)
                     if slug:
                         res = {
                             "title": first.get("title"),
@@ -327,6 +354,7 @@ async def search_game(name: str, language: str = STEAM_LANGUAGE) -> dict | None:
         pass
         
     return None
+
 
 
 async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str = STEAM_LANGUAGE) -> dict | None:
@@ -363,6 +391,12 @@ async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str 
             namespace
             productSlug
             urlSlug
+            catalogNs {
+              mappings {
+                pageSlug
+                pageType
+              }
+            }
             keyImages {
               type
               url
@@ -401,7 +435,7 @@ async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str 
                 elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
                 
                 for el in elements:
-                    el_slug = el.get("urlSlug") or el.get("productSlug")
+                    el_slug = resolve_epic_slug(el)
                     if el_slug == slug:
                         price_data = el.get("price", {}).get("totalPrice", {})
                         if not price_data:
@@ -443,5 +477,6 @@ async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str 
         pass
         
     return None
+
 
 

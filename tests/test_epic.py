@@ -373,9 +373,10 @@ def test_get_store_url():
 def test_normalize_epic_price():
     # USD (2 decimals, should not be multiplied)
     assert normalize_epic_price(1999, "USD") == 1999
-    # CLP (0 decimals, should be multiplied by 100 to match Steam)
-    assert normalize_epic_price(9990, "CLP") == 999000
-    # JPY (0 decimals)
+    # CLP (EGS returns CLP with 2 decimals, so it shouldn't be multiplied)
+    assert normalize_epic_price(999000, "CLP") == 999000
+    # JPY (0 decimals on EGS, should be multiplied by 100 to match Steam cents convention)
     assert normalize_epic_price(5000, "JPY") == 500000
     # None handling
     assert normalize_epic_price(None, "USD") == 0
+
