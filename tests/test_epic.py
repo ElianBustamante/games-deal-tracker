@@ -1,7 +1,17 @@
 import pytest
-from app.epic import search_game, get_deals, get_free_games, get_game_price, get_store_url, normalize_epic_price
+from app.epic import (
+    search_game, get_deals, get_free_games, get_game_price, get_store_url,
+    normalize_epic_price, deals_cache, search_cache, price_cache
+)
+
+@pytest.fixture(autouse=True)
+def clear_caches():
+    deals_cache.clear()
+    search_cache.clear()
+    price_cache.clear()
 
 class SharedState:
+
     def __init__(self):
         self._json = {}
         self._status = 200

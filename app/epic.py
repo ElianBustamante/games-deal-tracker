@@ -2,6 +2,7 @@ import os
 import aiohttp
 from curl_cffi.requests import AsyncSession
 from dotenv import load_dotenv
+from cachetools import TTLCache
 
 load_dotenv()
 
@@ -9,7 +10,17 @@ load_dotenv()
 STEAM_COUNTRY = os.getenv("STEAM_COUNTRY", "cl")
 STEAM_LANGUAGE = os.getenv("STEAM_LANGUAGE", "es")
 
+# Cache for EGS deals (5 minutes TTL)
+deals_cache = TTLCache(maxsize=100, ttl=300)
+
+# Cache for search_game (1 hour TTL)
+search_cache = TTLCache(maxsize=1000, ttl=3600)
+
+# Cache for get_game_price (15 minutes TTL)
+price_cache = TTLCache(maxsize=1000, ttl=900)
+
 def get_epic_locale(lang: str) -> str:
+
     # Map to Epic supported locale, defaulting to es-MX for Spanish as requested
     return "es-MX" if lang.lower() == "es" else "en-US"
 
@@ -114,6 +125,10 @@ async def get_free_games(country: str = STEAM_COUNTRY, language: str = STEAM_LAN
     return result
 
 async def get_deals(country: str = STEAM_COUNTRY, min_discount: int = 0, language: str = STEAM_LANGUAGE) -> list[dict]:
+    cache_key = f"{country}_{min_discount}_{language}"
+    if cache_key in deals_cache:
+        return deals_cache[cache_key]
+        
     locale = get_epic_locale(language)
     country_upper = country.upper()
     
@@ -243,10 +258,17 @@ async def get_deals(country: str = STEAM_COUNTRY, min_discount: int = 0, languag
     except Exception:
         pass
         
+    if deals:
+        deals_cache[cache_key] = deals
     return deals
 
 
+
 async def search_game(name: str, language: str = STEAM_LANGUAGE) -> dict | None:
+    cache_key = f"{name.lower().strip()}_{language}"
+    if cache_key in search_cache:
+        return search_cache[cache_key]
+        
     locale = get_epic_locale(language)
     url = "https://store.epicgames.com/graphql"
     headers = {
@@ -293,12 +315,14 @@ async def search_game(name: str, language: str = STEAM_LANGUAGE) -> dict | None:
                     first = elements[0]
                     slug = first.get("urlSlug") or first.get("productSlug")
                     if slug:
-                        return {
+                        res = {
                             "title": first.get("title"),
                             "slug": slug,
                             "epic_id": first.get("id"),
                             "namespace": first.get("namespace")
                         }
+                        search_cache[cache_key] = res
+                        return res
     except Exception:
         pass
         
@@ -306,6 +330,10 @@ async def search_game(name: str, language: str = STEAM_LANGUAGE) -> dict | None:
 
 
 async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str = STEAM_LANGUAGE) -> dict | None:
+    cache_key = f"{slug.lower().strip()}_{country}_{language}"
+    if cache_key in price_cache:
+        return price_cache[cache_key]
+        
     locale = get_epic_locale(language)
     country_upper = country.upper()
     
@@ -400,7 +428,7 @@ async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str 
                         orig_normalized = normalize_epic_price(original_price, currency)
                         final_normalized = normalize_epic_price(final_price, currency)
                         
-                        return {
+                        res = {
                             "title": el.get("title"),
                             "slug": slug,
                             "original_price": orig_normalized,
@@ -409,8 +437,11 @@ async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str 
                             "currency": currency,
                             "thumbnail": thumbnail
                         }
+                        price_cache[cache_key] = res
+                        return res
     except Exception:
         pass
         
     return None
+
 
