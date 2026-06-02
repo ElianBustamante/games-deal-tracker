@@ -356,25 +356,109 @@ async def stop_alerts(interaction: discord.Interaction):
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def steamdeals(interaction: discord.Interaction):
-    await interaction.response.send_message(get_text("searching", interaction.locale))
+    await interaction.response.defer()
     
-    stats = await checker.check_and_notify(bot)
+    target_id, is_dm = get_target_id(interaction)
+    country = await database.get_country(target_id)
+    language = await database.get_language(target_id)
     
-    await interaction.followup.send(
-        get_text("search_complete", interaction.locale, targets=stats['targets_checked'], deals=stats['total_deals_sent'])
-    )
+    # 1. Local watchlist deals
+    watchlist = await database.get_watchlist(target_id)
+    watchlist_deals = []
+    for game in watchlist:
+        app_id_str = str(game["app_id"])
+        is_epic_only = app_id_str.startswith("epic:") or not app_id_str.isdigit()
+        
+        if not is_epic_only:
+            app_id = int(app_id_str)
+            price = await steam.get_game_price(app_id, country)
+            if price and price.get("discount_percent", 0) > 0:
+                enriched = await checker.save_and_enrich(price)
+                if game.get("epic_slug"):
+                    try:
+                        epic_price = await epic.get_game_price(game["epic_slug"], country, language)
+                        if epic_price:
+                            enriched["epic_price"] = epic_price
+                    except Exception:
+                        pass
+                watchlist_deals.append(enriched)
+                
+    # 2. Local general deals
+    deals = await steam.get_featured_deals(country, language)
+    min_discount = await database.get_min_discount(target_id)
+    general_deals = []
+    for deal in deals:
+        if deal.get("discount_percent", 0) >= min_discount:
+            validated = await steam.get_game_price(deal["app_id"], country)
+            if validated:
+                enriched = await checker.save_and_enrich(validated)
+                general_deals.append(enriched)
+                
+    # Combine and deduplicate
+    deals_by_app_id = {}
+    for deal in general_deals:
+        deals_by_app_id[deal["app_id"]] = deal
+    for deal in watchlist_deals:
+        deals_by_app_id[deal["app_id"]] = deal
+        
+    if not deals_by_app_id:
+        await interaction.followup.send("No encontré ofertas en este momento." if language == "es" else "No deals found at the moment.")
+        return
+        
+    from app.formatter import make_deal_embed
+    # Send directly to the channel where it was called
+    for deal in deals_by_app_id.values():
+        embed = make_deal_embed(deal, locale=interaction.locale)
+        await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="epicdeals", description="Busca ofertas de Epic Games Store manualmente")
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 async def epicdeals(interaction: discord.Interaction):
-    await interaction.response.send_message(get_text("searching_epic", interaction.locale))
+    await interaction.response.defer()
     
-    stats = await checker.check_epic_and_notify(bot)
+    target_id, is_dm = get_target_id(interaction)
+    country = await database.get_country(target_id)
+    language = await database.get_language(target_id)
+    min_discount = await database.get_min_discount(target_id)
     
-    await interaction.followup.send(
-        get_text("search_complete", interaction.locale, targets=stats['targets_checked'], deals=stats['total_deals_sent'])
-    )
+    deals_list = await epic.get_deals(country, min_discount, language)
+    
+    if not deals_list:
+        await interaction.followup.send("No encontré ofertas en este momento." if language == "es" else "No deals found at the moment.")
+        return
+        
+    from app.formatter import make_epic_deal_embed
+    
+    # Send up to 5 deals directly to the channel where it was called
+    for deal in deals_list[:5]:
+        historical_low = await database.get_historical_low(deal["slug"], deal["currency"], store="epic")
+        await database.save_price_snapshot(
+            deal["slug"],
+            deal["title"],
+            deal["final_price"],
+            deal["original_price"],
+            deal["discount_percent"],
+            deal["currency"],
+            store="epic"
+        )
+        
+        is_historical_low = False
+        if historical_low is None:
+            is_historical_low = True
+        elif deal["final_price"] <= historical_low["price_final"]:
+            is_historical_low = True
+            
+        enriched = deal.copy()
+        enriched["name"] = deal["title"]
+        enriched["price_original"] = deal["original_price"]
+        enriched["price_final"] = deal["final_price"]
+        enriched["url"] = epic.get_store_url(deal["slug"])
+        enriched["historical_low"] = historical_low
+        enriched["is_historical_low"] = is_historical_low
+        
+        embed = make_epic_deal_embed(enriched, locale=interaction.locale)
+        await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="epicfree", description="Muestra los juegos gratis actuales y futuros de Epic Games Store")
 @app_commands.allowed_installs(guilds=True, users=True)
