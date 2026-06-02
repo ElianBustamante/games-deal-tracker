@@ -23,21 +23,22 @@ def make_deal_embed(game: dict, locale: str = "es") -> discord.Embed:
     if game.get("is_historical_low"):
         emoji = "🏆"
         color = discord.Color.gold()
-    elif game.get("discount_percent", 0) >= 75:
-        emoji = "🔥"
-        color = discord.Color.green()
-    elif game.get("discount_percent", 0) >= 50:
-        emoji = "🎮"
-        color = discord.Color.yellow()
     else:
-        emoji = "🎮"
-        color = discord.Color.orange()
+        if game.get("discount_percent", 0) >= 75:
+            emoji = "🔥"
+        else:
+            emoji = "🎮"
+        color = discord.Color.from_rgb(102, 192, 244)  # Steam blue #66c0f4
         
     embed = discord.Embed(
         title=f"{emoji} {game.get('name', get_text('unknown_game', locale))}",
         url=game.get("url"),
         color=color
     )
+    
+    # Add author header
+    steam_icon = "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/512px-Steam_icon_logo.svg.png"
+    embed.set_author(name="Steam Deals", icon_url=steam_icon)
     
     price_orig = format_price(game["price_original"], game["currency"])
     price_fin = format_price(game["price_final"], game["currency"])
@@ -107,6 +108,10 @@ def make_epic_deal_embed(game: dict, locale: str = "es") -> discord.Embed:
         color=color
     )
     
+    # Add author header
+    epic_icon = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Epic_Games_logo.svg/512px-Epic_Games_logo.svg.png"
+    embed.set_author(name="Epic Games Store", icon_url=epic_icon)
+    
     price_orig_cents = game.get("price_original") or game.get("original_price") or 0
     price_fin_cents = game.get("price_final") or game.get("final_price") or 0
     
@@ -146,6 +151,10 @@ def make_epic_free_embed(current: list[dict], upcoming: list[dict], locale: str 
         title=get_text("epic_free_title", locale),
         color=0x2ecc71  # Green for free
     )
+    
+    # Add author header
+    epic_icon = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Epic_Games_logo.svg/512px-Epic_Games_logo.svg.png"
+    embed.set_author(name="Epic Games Store", icon_url=epic_icon)
     
     # Available now
     if current:

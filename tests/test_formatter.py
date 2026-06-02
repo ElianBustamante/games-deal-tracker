@@ -17,8 +17,10 @@ def test_embed_is_gold_when_historical_low():
     embed = make_deal_embed(game)
     assert embed.color == discord.Color.gold()
     assert embed.title.startswith("🏆")
+    assert embed.author.name == "Steam Deals"
+    assert "Steam_icon_logo" in embed.author.icon_url
 
-def test_embed_is_green_for_75_percent_discount():
+def test_embed_is_steam_blue_for_discount():
     game = {
         "app_id": 1,
         "name": "Test Game",
@@ -32,7 +34,7 @@ def test_embed_is_green_for_75_percent_discount():
     }
     
     embed = make_deal_embed(game)
-    assert embed.color == discord.Color.green()
+    assert embed.color == discord.Color.from_rgb(102, 192, 244)
     assert embed.title.startswith("🔥")
 
 def test_history_field_no_history():
@@ -84,6 +86,8 @@ def test_make_epic_deal_embed():
     assert embed.title == "🟣 Epic Game"
     assert embed.fields[0].name == "Precio"
     assert embed.fields[0].value == "~~$20.00 USD~~ → **$10.00 USD**"
+    assert embed.author.name == "Epic Games Store"
+    assert "Epic_Games_logo" in embed.author.icon_url
 
 def test_make_epic_free_embed():
     from app.formatter import make_epic_free_embed
@@ -91,6 +95,8 @@ def test_make_epic_free_embed():
     upcoming = [{"title": "Free Later", "slug": "free-later", "start_date": "2026-06-17T17:00:00.000Z"}]
     embed = make_epic_free_embed(current, upcoming)
     assert embed.title == "🎁 Juegos Gratis — Epic Games"
+    assert embed.author.name == "Epic Games Store"
+    assert "Epic_Games_logo" in embed.author.icon_url
     assert len(embed.fields) == 2
     assert "Free Now" in embed.fields[0].value
     assert "Free Later" in embed.fields[1].value
