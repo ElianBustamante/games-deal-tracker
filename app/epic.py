@@ -1,8 +1,10 @@
 import os
 import aiohttp
+from curl_cffi.requests import AsyncSession
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 STEAM_COUNTRY = os.getenv("STEAM_COUNTRY", "cl")
 STEAM_LANGUAGE = os.getenv("STEAM_LANGUAGE", "es")
@@ -115,10 +117,13 @@ async def get_deals(country: str = STEAM_COUNTRY, min_discount: int = 0, languag
     locale = get_epic_locale(language)
     country_upper = country.upper()
     
-    url = "https://graphql.epicgames.com/graphql"
+    url = "https://store.epicgames.com/graphql"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Accept": "*/*",
+        "Origin": "https://store.epicgames.com",
+        "Referer": "https://store.epicgames.com/"
     }
     
     query = """
@@ -170,82 +175,86 @@ async def get_deals(country: str = STEAM_COUNTRY, min_discount: int = 0, languag
     deals = []
     
     try:
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
-            async with session.post(url, headers=headers, json=payload) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
+        async with AsyncSession(impersonate="chrome120") as session:
+            response = await session.post(url, headers=headers, json=payload, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
+                
+                for el in elements:
+                    title = el.get("title")
+                    slug = el.get("urlSlug") or el.get("productSlug")
+                    if not slug or not title:
+                        continue
+                        
+                    price_data = el.get("price", {}).get("totalPrice", {})
+                    if not price_data:
+                        continue
+                        
+                    original_price = price_data.get("originalPrice", 0)
+                    final_price = price_data.get("discountPrice", 0)
+                    discount_amt = price_data.get("discount", 0)
+                    currency = price_data.get("currencyCode", "USD")
                     
-                    for el in elements:
-                        title = el.get("title")
-                        slug = el.get("urlSlug") or el.get("productSlug")
-                        if not slug or not title:
-                            continue
-                            
-                        price_data = el.get("price", {}).get("totalPrice", {})
-                        if not price_data:
-                            continue
-                            
-                        original_price = price_data.get("originalPrice", 0)
-                        final_price = price_data.get("discountPrice", 0)
-                        discount_amt = price_data.get("discount", 0)
-                        currency = price_data.get("currencyCode", "USD")
+                    # Calculate discount percent
+                    discount_percent = 0
+                    if original_price > 0:
+                        discount_percent = round((discount_amt / original_price) * 100)
                         
-                        # Calculate discount percent
-                        discount_percent = 0
-                        if original_price > 0:
-                            discount_percent = round((discount_amt / original_price) * 100)
-                            
-                        if discount_percent < min_discount or discount_percent == 0:
-                            continue
-                            
-                        # Find end date
-                        end_date = None
-                        promotions = el.get("promotions")
-                        if promotions:
-                            promo_offers = promotions.get("promotionalOffers", [])
-                            for group in promo_offers:
-                                for offer in group.get("promotionalOffers", []):
-                                    if offer.get("discountSetting", {}).get("discountPercentage") == discount_percent:
-                                        end_date = offer.get("endDate")
-                                        break
-                                if end_date:
+                    if discount_percent < min_discount or discount_percent == 0:
+                        continue
+                        
+                    # Find end date
+                    end_date = None
+                    promotions = el.get("promotions")
+                    if promotions:
+                        promo_offers = promotions.get("promotionalOffers", [])
+                        for group in promo_offers:
+                            for offer in group.get("promotionalOffers", []):
+                                if offer.get("discountSetting", {}).get("discountPercentage") == discount_percent:
+                                    end_date = offer.get("endDate")
                                     break
-                                    
-                        thumbnail = None
-                        key_images = el.get("keyImages", [])
-                        for img in key_images:
-                            if img.get("type") in ["OfferImageWide", "Thumbnail"]:
-                                thumbnail = img.get("url")
+                            if end_date:
                                 break
-                        if not thumbnail and key_images:
-                            thumbnail = key_images[0].get("url")
-                            
-                        # Normalize prices to cents/Steam format
-                        orig_normalized = normalize_epic_price(original_price, currency)
-                        final_normalized = normalize_epic_price(final_price, currency)
+                                
+                    thumbnail = None
+                    key_images = el.get("keyImages", [])
+                    for img in key_images:
+                        if img.get("type") in ["OfferImageWide", "Thumbnail"]:
+                            thumbnail = img.get("url")
+                            break
+                    if not thumbnail and key_images:
+                        thumbnail = key_images[0].get("url")
                         
-                        deals.append({
-                            "title": title,
-                            "slug": slug,
-                            "original_price": orig_normalized,
-                            "final_price": final_normalized,
-                            "discount_percent": discount_percent,
-                            "currency": currency,
-                            "end_date": end_date,
-                            "thumbnail": thumbnail
-                        })
+                    # Normalize prices to cents/Steam format
+                    orig_normalized = normalize_epic_price(original_price, currency)
+                    final_normalized = normalize_epic_price(final_price, currency)
+                    
+                    deals.append({
+                        "title": title,
+                        "slug": slug,
+                        "original_price": orig_normalized,
+                        "final_price": final_normalized,
+                        "discount_percent": discount_percent,
+                        "currency": currency,
+                        "end_date": end_date,
+                        "thumbnail": thumbnail
+                    })
     except Exception:
         pass
         
     return deals
 
+
 async def search_game(name: str, language: str = STEAM_LANGUAGE) -> dict | None:
     locale = get_epic_locale(language)
-    url = "https://graphql.epicgames.com/graphql"
+    url = "https://store.epicgames.com/graphql"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Accept": "*/*",
+        "Origin": "https://store.epicgames.com",
+        "Referer": "https://store.epicgames.com/"
     }
     
     # Escape quotes in game name search keyword
@@ -275,34 +284,38 @@ async def search_game(name: str, language: str = STEAM_LANGUAGE) -> dict | None:
     payload = {"query": query}
     
     try:
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
-            async with session.post(url, headers=headers, json=payload) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
-                    if elements:
-                        first = elements[0]
-                        slug = first.get("urlSlug") or first.get("productSlug")
-                        if slug:
-                            return {
-                                "title": first.get("title"),
-                                "slug": slug,
-                                "epic_id": first.get("id"),
-                                "namespace": first.get("namespace")
-                            }
+        async with AsyncSession(impersonate="chrome120") as session:
+            response = await session.post(url, headers=headers, json=payload, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
+                if elements:
+                    first = elements[0]
+                    slug = first.get("urlSlug") or first.get("productSlug")
+                    if slug:
+                        return {
+                            "title": first.get("title"),
+                            "slug": slug,
+                            "epic_id": first.get("id"),
+                            "namespace": first.get("namespace")
+                        }
     except Exception:
         pass
         
     return None
 
+
 async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str = STEAM_LANGUAGE) -> dict | None:
     locale = get_epic_locale(language)
     country_upper = country.upper()
     
-    url = "https://graphql.epicgames.com/graphql"
+    url = "https://store.epicgames.com/graphql"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Accept": "*/*",
+        "Origin": "https://store.epicgames.com",
+        "Referer": "https://store.epicgames.com/"
     }
     
     # We query using keywords/search terms matching the slug
@@ -353,50 +366,51 @@ async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str 
     payload = {"query": query}
     
     try:
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
-            async with session.post(url, headers=headers, json=payload) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
-                    
-                    for el in elements:
-                        el_slug = el.get("urlSlug") or el.get("productSlug")
-                        if el_slug == slug:
-                            price_data = el.get("price", {}).get("totalPrice", {})
-                            if not price_data:
-                                continue
-                                
-                            original_price = price_data.get("originalPrice", 0)
-                            final_price = price_data.get("discountPrice", 0)
-                            discount_amt = price_data.get("discount", 0)
-                            currency = price_data.get("currencyCode", "USD")
+        async with AsyncSession(impersonate="chrome120") as session:
+            response = await session.post(url, headers=headers, json=payload, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
+                
+                for el in elements:
+                    el_slug = el.get("urlSlug") or el.get("productSlug")
+                    if el_slug == slug:
+                        price_data = el.get("price", {}).get("totalPrice", {})
+                        if not price_data:
+                            continue
                             
-                            discount_percent = 0
-                            if original_price > 0:
-                                discount_percent = round((discount_amt / original_price) * 100)
-                                
-                            thumbnail = None
-                            key_images = el.get("keyImages", [])
-                            for img in key_images:
-                                if img.get("type") in ["OfferImageWide", "Thumbnail"]:
-                                    thumbnail = img.get("url")
-                                    break
-                            if not thumbnail and key_images:
-                                thumbnail = key_images[0].get("url")
-                                
-                            orig_normalized = normalize_epic_price(original_price, currency)
-                            final_normalized = normalize_epic_price(final_price, currency)
+                        original_price = price_data.get("originalPrice", 0)
+                        final_price = price_data.get("discountPrice", 0)
+                        discount_amt = price_data.get("discount", 0)
+                        currency = price_data.get("currencyCode", "USD")
+                        
+                        discount_percent = 0
+                        if original_price > 0:
+                            discount_percent = round((discount_amt / original_price) * 100)
                             
-                            return {
-                                "title": el.get("title"),
-                                "slug": slug,
-                                "original_price": orig_normalized,
-                                "final_price": final_normalized,
-                                "discount_percent": discount_percent,
-                                "currency": currency,
-                                "thumbnail": thumbnail
-                            }
+                        thumbnail = None
+                        key_images = el.get("keyImages", [])
+                        for img in key_images:
+                            if img.get("type") in ["OfferImageWide", "Thumbnail"]:
+                                thumbnail = img.get("url")
+                                break
+                        if not thumbnail and key_images:
+                            thumbnail = key_images[0].get("url")
+                            
+                        orig_normalized = normalize_epic_price(original_price, currency)
+                        final_normalized = normalize_epic_price(final_price, currency)
+                        
+                        return {
+                            "title": el.get("title"),
+                            "slug": slug,
+                            "original_price": orig_normalized,
+                            "final_price": final_normalized,
+                            "discount_percent": discount_percent,
+                            "currency": currency,
+                            "thumbnail": thumbnail
+                        }
     except Exception:
         pass
         
     return None
+

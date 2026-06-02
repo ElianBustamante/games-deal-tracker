@@ -1,13 +1,37 @@
 import pytest
 from app.epic import search_game, get_deals, get_free_games, get_game_price, get_store_url, normalize_epic_price
 
-class MockResponse:
-    def __init__(self, json_data=None, status=200):
-        self._json = json_data or {}
-        self.status = status
+class SharedState:
+    def __init__(self):
+        self._json = {}
+        self._status = 200
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, val):
+        self._status = val
+
+    @property
+    def status_code(self):
+        return self._status
+
+    @status_code.setter
+    def status_code(self, val):
+        self._status = val
+
+class MockAioHttpResponse:
+    def __init__(self, state):
+        self.state = state
+
+    @property
+    def status(self):
+        return self.state.status
 
     async def json(self):
-        return self._json
+        return self.state._json
 
     async def __aenter__(self):
         return self
@@ -15,7 +39,7 @@ class MockResponse:
     async def __aexit__(self, exc_type, exc, tb):
         pass
 
-class MockSession:
+class MockAiohttpSession:
     def __init__(self, response):
         self.response = response
 
@@ -31,12 +55,49 @@ class MockSession:
     async def __aexit__(self, exc_type, exc, tb):
         pass
 
+class MockCurlCffiResponse:
+    def __init__(self, state):
+        self.state = state
+
+    @property
+    def status_code(self):
+        return self.state.status
+
+    def json(self):
+        return self.state._json
+
+class MockCurlCffiSession:
+    def __init__(self, response):
+        self.response = response
+
+    async def post(self, url, **kwargs):
+        return self.response
+
+    async def get(self, url, **kwargs):
+        return self.response
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        pass
+
 @pytest.fixture
 def mock_aiohttp_session(mocker):
-    mock_response = MockResponse()
-    mock_session = MockSession(mock_response)
-    mocker.patch("app.epic.aiohttp.ClientSession", return_value=mock_session)
-    return mock_response
+    state = SharedState()
+    
+    # Mock aiohttp
+    aiohttp_resp = MockAioHttpResponse(state)
+    aiohttp_sess = MockAiohttpSession(aiohttp_resp)
+    mocker.patch("app.epic.aiohttp.ClientSession", return_value=aiohttp_sess)
+    
+    # Mock curl-cffi
+    curl_resp = MockCurlCffiResponse(state)
+    curl_sess = MockCurlCffiSession(curl_resp)
+    mocker.patch("app.epic.AsyncSession", return_value=curl_sess)
+    
+    return state
+
 
 @pytest.mark.asyncio
 async def test_get_free_games_success(mock_aiohttp_session):
