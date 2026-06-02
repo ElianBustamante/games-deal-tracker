@@ -77,9 +77,7 @@ async def get_free_games(country: str = STEAM_COUNTRY, language: str = STEAM_LAN
                         title = el.get("title")
                         
                         # Find slug
-                        slug = el.get("urlSlug") or el.get("productSlug")
-                        if not slug and el.get("catalogNs", {}).get("mappings"):
-                            slug = el["catalogNs"]["mappings"][0].get("pageSlug")
+                        slug = resolve_epic_slug(el)
                         
                         if not slug or not title:
                             continue
