@@ -92,7 +92,7 @@ async def check_watchlist(target_id: str, country: str, language: str = "es") ->
             # Enrich with Epic Games Store comparison if available
             if game.get("epic_slug"):
                 try:
-                    epic_price = await epic.get_game_price(game["epic_slug"], country, language)
+                    epic_price = await epic.get_game_price(game["epic_slug"], country, language, search_keyword=game["game_name"])
                     if epic_price:
                         enriched["epic_price"] = epic_price
                 except Exception:

@@ -299,8 +299,30 @@ async def clear_old_notifications() -> None:
         await db.execute("DELETE FROM notified_deals WHERE notified_at < datetime('now', '-1 day')")
         await db.commit()
 
+async def get_last_price_snapshot(app_id: int | str, currency: str, store: str = 'steam') -> dict | None:
+    async with await connect_db() as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            """SELECT price_final, discount_percent, recorded_at 
+               FROM price_history WHERE app_id = ? AND currency = ? AND store = ? ORDER BY id DESC LIMIT 1""",
+            (str(app_id), currency, store)
+        )
+        row = await cursor.fetchone()
+        if row:
+            return {
+                "price_final": row["price_final"],
+                "discount_percent": row["discount_percent"],
+                "recorded_at": row["recorded_at"]
+            }
+        return None
+
 # Price History Functions
 async def save_price_snapshot(app_id: int | str, game_name: str, price_final: int, price_original: int, discount_percent: int, currency: str, store: str = 'steam') -> None:
+    last_snapshot = await get_last_price_snapshot(app_id, currency, store)
+    if last_snapshot:
+        if last_snapshot["price_final"] == price_final and last_snapshot["discount_percent"] == discount_percent:
+            return  # Price has not changed since the last snapshot, skip to avoid duplicates
+            
     async with await connect_db() as db:
         await db.execute(
             """INSERT INTO price_history 
@@ -332,7 +354,7 @@ async def get_price_history(app_id: int | str, currency: str, limit: int = 10, s
         db.row_factory = aiosqlite.Row
         cursor = await db.execute(
             """SELECT price_final, price_original, discount_percent, recorded_at 
-               FROM price_history WHERE app_id = ? AND currency = ? AND store = ? ORDER BY recorded_at DESC LIMIT ?""",
+               FROM price_history WHERE app_id = ? AND currency = ? AND store = ? ORDER BY id DESC LIMIT ?""",
             (str(app_id), currency, store, limit)
         )
         rows = await cursor.fetchall()

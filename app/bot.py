@@ -231,10 +231,9 @@ async def watchlist_show(interaction: discord.Interaction):
     for game in watchlist:
         app_id_str = str(game["app_id"])
         is_epic_only = app_id_str.startswith("epic:") or not app_id_str.isdigit()
-        
         if is_epic_only:
             slug = app_id_str.replace("epic:", "")
-            price = await epic.get_game_price(slug)
+            price = await epic.get_game_price(slug, search_keyword=game["game_name"])
             if price and price.get("discount_percent", 0) > 0:
                 status = get_text("status_discount", interaction.locale, discount=price['discount_percent'])
             else:
@@ -263,8 +262,8 @@ async def watchlist_show(interaction: discord.Interaction):
 bot.tree.add_command(watchlist_group)
 
 @bot.tree.command(name="setsteamchannel", description="Configura el canal donde se enviarán las alertas de Steam")
-@app_commands.allowed_installs(guilds=True, users=True)
-@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.allowed_installs(guilds=True, users=False)
+@app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
 @app_commands.guild_only()
 @app_commands.describe(channel="El canal para las alertas de Steam")
 @app_commands.checks.has_permissions(manage_channels=True)
@@ -274,8 +273,8 @@ async def setsteamchannel(interaction: discord.Interaction, channel: discord.Tex
     await interaction.response.send_message(get_text("alerts_channel_set", interaction.locale, mention=channel.mention), ephemeral=True)
 
 @bot.tree.command(name="setepicchannel", description="Configura el canal donde se enviarán las alertas de Epic Games")
-@app_commands.allowed_installs(guilds=True, users=True)
-@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.allowed_installs(guilds=True, users=False)
+@app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
 @app_commands.guild_only()
 @app_commands.describe(channel="El canal para las alertas de Epic")
 @app_commands.checks.has_permissions(manage_channels=True)
@@ -376,7 +375,7 @@ async def steamdeals(interaction: discord.Interaction):
                 enriched = await checker.save_and_enrich(price)
                 if game.get("epic_slug"):
                     try:
-                        epic_price = await epic.get_game_price(game["epic_slug"], country, language)
+                        epic_price = await epic.get_game_price(game["epic_slug"], country, language, search_keyword=game["game_name"])
                         if epic_price:
                             enriched["epic_price"] = epic_price
                     except Exception:
@@ -520,7 +519,7 @@ async def compare(interaction: discord.Interaction, game: str):
     epic_history = []
     
     if epic_result:
-        epic_data = await epic.get_game_price(epic_result["slug"], country, language)
+        epic_data = await epic.get_game_price(epic_result["slug"], country, language, search_keyword=game)
         if epic_data:
             epic_data["url"] = epic.get_store_url(epic_result["slug"])
             epic_history = await database.get_price_history(epic_result["slug"], epic_data["currency"], limit=10, store="epic")
@@ -552,31 +551,38 @@ async def history(interaction: discord.Interaction, game: str):
     country = await database.get_country(target_id)
     language = await database.get_language(target_id)
     
-    # 1. Search Steam
-    search_result = await steam.search_game(game, country, language)
+    embeds = []
     
-    if search_result:
-        app_id = search_result["app_id"]
+    # 1. Search Steam
+    steam_result = await steam.search_game(game, country, language)
+    if steam_result:
+        app_id = steam_result["app_id"]
         current_price = await steam.get_game_price(app_id, country)
         currency = current_price.get("currency", "USD") if current_price else "USD"
         
         price_history = await database.get_price_history(app_id, currency, limit=10, store="steam")
-        embed = make_history_embed(search_result["name"], price_history, currency, locale=interaction.locale)
-        await interaction.followup.send(embed=embed)
+        steam_embed = make_history_embed(steam_result["name"], price_history, currency, locale=interaction.locale)
+        steam_embed.title = f"📈 {get_text('history_title', interaction.locale, game_name=steam_result['name'])} (Steam)"
+        steam_embed.color = discord.Color.from_rgb(102, 192, 244)  # Steam Blue
+        embeds.append(steam_embed)
+        
+    # 2. Search Epic Games Store
+    epic_result = await epic.search_game(game, language)
+    if epic_result:
+        slug = epic_result["slug"]
+        current_price = await epic.get_game_price(slug, country, language, search_keyword=game)
+        currency = current_price.get("currency", "USD") if current_price else "USD"
+        
+        price_history = await database.get_price_history(slug, currency, limit=10, store="epic")
+        epic_embed = make_history_embed(epic_result["title"], price_history, currency, locale=interaction.locale)
+        epic_embed.title = f"📈 {get_text('history_title', interaction.locale, game_name=epic_result['title'])} (Epic Games Store)"
+        epic_embed.color = 0x9b59b6  # Epic Purple
+        embeds.append(epic_embed)
+        
+    if embeds:
+        await interaction.followup.send(embeds=embeds)
     else:
-        # Fallback to Epic Games Store
-        epic_result = await epic.search_game(game, language)
-        if epic_result:
-            slug = epic_result["slug"]
-            current_price = await epic.get_game_price(slug, country, language)
-            currency = current_price.get("currency", "USD") if current_price else "USD"
-            
-            price_history = await database.get_price_history(slug, currency, limit=10, store="epic")
-            embed = make_history_embed(epic_result["title"], price_history, currency, locale=interaction.locale)
-            embed.title = f"📈 {get_text('history_title', interaction.locale, game_name=epic_result['title'])} (Epic Games)"
-            await interaction.followup.send(embed=embed)
-        else:
-            await interaction.followup.send(get_text("game_not_found", interaction.locale))
+        await interaction.followup.send(get_text("game_not_found", interaction.locale))
 
 def run():
     if not TOKEN:

@@ -367,7 +367,7 @@ async def search_game(name: str, language: str = STEAM_LANGUAGE) -> dict | None:
 
 
 
-async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str = STEAM_LANGUAGE) -> dict | None:
+async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str = STEAM_LANGUAGE, search_keyword: str = None) -> dict | None:
     cache_key = f"{slug.lower().strip()}_{country}_{language}"
     if cache_key in price_cache:
         return price_cache[cache_key]
@@ -385,8 +385,9 @@ async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str 
     }
     
     import re
-    # Clean the slug for search keywords: strip trailing 6-char hex hash and replace hyphens with spaces
-    search_keyword = re.sub(r'-[0-9a-fA-F]{6}$', '', slug).replace('-', ' ')
+    # Clean the slug for search keywords if no search_keyword is provided
+    if not search_keyword:
+        search_keyword = re.sub(r'-[0-9a-fA-F]{6}$', '', slug).replace('-', ' ')
     escaped_keyword = search_keyword.replace('"', '\\"')
     
     query = """

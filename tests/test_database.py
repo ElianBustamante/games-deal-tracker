@@ -126,3 +126,24 @@ async def test_epic_specific_database_operations():
     assert await database.was_notified_today(server_id, epic_slug, store="epic") is True
     assert await database.was_notified_today(server_id, epic_slug, store="steam") is False
 
+@pytest.mark.asyncio
+async def test_save_price_snapshot_deduplicates_identical_consecutive_snapshots():
+    app_id = 555
+    game_name = "Deduplicated Game"
+    
+    # Save first snapshot
+    await database.save_price_snapshot(app_id, game_name, 1000, 2000, 50, "USD")
+    
+    # Save identical consecutive snapshot (should be skipped)
+    await database.save_price_snapshot(app_id, game_name, 1000, 2000, 50, "USD")
+    
+    # Save another snapshot with different price (should be inserted)
+    await database.save_price_snapshot(app_id, game_name, 800, 2000, 60, "USD")
+    
+    # Save identical consecutive snapshot again (should be skipped)
+    await database.save_price_snapshot(app_id, game_name, 800, 2000, 60, "USD")
+    
+    history = await database.get_price_history(app_id, "USD")
+    assert len(history) == 2  # Only two unique changes should be recorded
+    assert history[0]["price_final"] == 800
+    assert history[1]["price_final"] == 1000
