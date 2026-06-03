@@ -11,6 +11,7 @@ The bot only collects the minimum amount of data required to function properly. 
 - **Discord IDs:** Your Server (Guild) ID, Channel ID, and/or your personal User ID (if you use Direct Messages).
 - **Bot Configuration:** The country (`/setcountry`), language (`/setlanguage`), and minimum discount percentage (`/setdiscount`) you configure.
 - **Watchlist Data:** The Steam App IDs and/or Epic Games Store slugs of the games you add to your watchlist (`/watchlist add`).
+- **Diagnostic Log Files:** Technical logs (e.g., `bot-steam-epic.log`) are generated locally on the hosting machine for debugging purposes (such as tracking command executions, API timeouts, and delivery errors). These logs record timestamps, server/user IDs, and event details. They are used solely for diagnostic troubleshooting and are automatically rotated (max 5MB, up to 3 backup files) and overwritten periodically.
 
 ## 2. Information we do NOT collect
 
