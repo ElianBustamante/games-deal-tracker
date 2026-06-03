@@ -7,8 +7,10 @@ from apscheduler.triggers.cron import CronTrigger
 from app.bot import bot, TOKEN
 from app.checker import check_and_notify, check_epic_and_notify, check_epic_free_games
 
-# Set up basic logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+from app.logger import setup_logging
+
+# Set up logging configuration
+setup_logging()
 logger = logging.getLogger("steam_deals_scheduler")
 
 load_dotenv()

@@ -5,6 +5,9 @@ from discord.ext import commands
 from discord import app_commands
 from dotenv import load_dotenv
 
+from app.logger import setup_logging
+
+setup_logging()
 logger = logging.getLogger("steam_deals_bot")
 
 import app.steam as steam
@@ -100,6 +103,23 @@ async def ensure_dm_setup(target_id: str, is_dm: bool):
         await database.set_channel(target_id, target_id, is_dm=True)
 
 bot = SteamDealsBot()
+
+@bot.tree.error
+async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    command_name = interaction.command.name if interaction.command else "unknown"
+    logger.error(f"Error executing command '/{command_name}': {error}", exc_info=error.__cause__ or error)
+    
+    try:
+        response_msg = get_text("unexpected_error", interaction.locale)
+        if isinstance(error, app_commands.errors.MissingPermissions):
+            response_msg = get_text("no_permissions", interaction.locale)
+            
+        if not interaction.response.is_done():
+            await interaction.response.send_message(response_msg, ephemeral=True)
+        else:
+            await interaction.followup.send(response_msg, ephemeral=True)
+    except Exception as e:
+        logger.error(f"Failed to send error response to user for command '/{command_name}': {e}", exc_info=True)
 
 async def game_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
     if not current or len(current) < 3:

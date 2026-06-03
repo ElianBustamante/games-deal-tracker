@@ -1,4 +1,6 @@
 import os
+import logging
+import asyncio
 import aiohttp
 from curl_cffi.requests import AsyncSession
 from dotenv import load_dotenv
@@ -6,6 +8,7 @@ from cachetools import TTLCache
 
 load_dotenv()
 
+logger = logging.getLogger("steam_deals_bot")
 
 STEAM_COUNTRY = os.getenv("STEAM_COUNTRY", "cl")
 STEAM_LANGUAGE = os.getenv("STEAM_LANGUAGE", "es")
@@ -17,13 +20,12 @@ EPIC_LANGUAGE = os.getenv("EPIC_LANGUAGE", STEAM_LANGUAGE)
 deals_cache = TTLCache(maxsize=100, ttl=300)
 
 # Cache for search_game (1 hour TTL)
-search_cache = TTLCache(maxsize=1000, ttl=3600)
+search_cache = TTLCache(maxsize=100, ttl=3600)
 
 # Cache for get_game_price (15 minutes TTL)
 price_cache = TTLCache(maxsize=1000, ttl=900)
 
 def get_epic_locale(lang: str) -> str:
-
     # Map to Epic supported locale, defaulting to es-MX for Spanish as requested
     return "es-MX" if lang.lower() == "es" else "en-US"
 
@@ -57,6 +59,59 @@ def resolve_epic_slug(element: dict) -> str | None:
             return slug
     return element.get("productSlug") or element.get("urlSlug")
 
+async def _fetch_free_games(url: str, headers: dict, timeout_secs: int = 10, max_attempts: int = 3, delay: float = 1.0) -> any:
+    for attempt in range(1, max_attempts + 1):
+        try:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout_secs)) as session:
+                async with session.get(url, headers=headers) as response:
+                    if response.status == 200:
+                        return await response.json()
+                    elif response.status in [429, 500, 502, 503, 504]:
+                        logger.warning(
+                            f"Epic Free Games API returned transient status {response.status} for URL: {url}. "
+                            f"Attempt {attempt} of {max_attempts}."
+                        )
+                        if attempt == max_attempts:
+                            response.raise_for_status()
+                    else:
+                        response.raise_for_status()
+        except Exception as e:
+            logger.warning(
+                f"Network exception calling Epic Free Games API: {e} for URL: {url}. "
+                f"Attempt {attempt} of {max_attempts}."
+            )
+            if attempt == max_attempts:
+                logger.error(f"Failed all {max_attempts} attempts to fetch Epic free games: {url}. Error: {e}", exc_info=True)
+                raise
+            await asyncio.sleep(delay * attempt)
+    return None
+
+async def _post_graphql(url: str, headers: dict, payload: dict, timeout_secs: int = 10, max_attempts: int = 3, delay: float = 1.0) -> any:
+    for attempt in range(1, max_attempts + 1):
+        try:
+            async with AsyncSession(impersonate="chrome120") as s:
+                response = await s.post(url, headers=headers, json=payload, timeout=timeout_secs)
+                if response.status_code == 200:
+                    return response.json()
+                elif response.status_code in [429, 500, 502, 503, 504]:
+                    logger.warning(
+                        f"Epic GraphQL API returned transient status {response.status_code} for URL: {url}. "
+                        f"Attempt {attempt} of {max_attempts}."
+                    )
+                    if attempt == max_attempts:
+                        raise Exception(f"HTTP {response.status_code}")
+                else:
+                    raise Exception(f"HTTP {response.status_code}")
+        except Exception as e:
+            logger.warning(
+                f"Network or Cloudflare bypass exception calling Epic GraphQL: {e} for URL: {url}. "
+                f"Attempt {attempt} of {max_attempts}."
+            )
+            if attempt == max_attempts:
+                logger.error(f"Failed all {max_attempts} attempts to execute Epic GraphQL query. Error: {e}", exc_info=True)
+                raise
+            await asyncio.sleep(delay * attempt)
+    return None
 
 async def get_free_games(country: str = EPIC_COUNTRY, language: str = EPIC_LANGUAGE) -> dict:
     locale = get_epic_locale(language)
@@ -70,70 +125,64 @@ async def get_free_games(country: str = EPIC_COUNTRY, language: str = EPIC_LANGU
     result = {"current": [], "upcoming": []}
     
     try:
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
-            async with session.get(url, headers=headers) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", [])
+        data = await _fetch_free_games(url, headers)
+        if data:
+            elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
+            
+            for el in elements:
+                title = el.get("title")
+                slug = resolve_epic_slug(el)
+                
+                if not slug or not title:
+                    continue
                     
-                    for el in elements:
-                        title = el.get("title")
-                        
-                        # Find slug
-                        slug = resolve_epic_slug(el)
-                        
-                        if not slug or not title:
-                            continue
+                thumbnail = None
+                key_images = el.get("keyImages", [])
+                for img in key_images:
+                    if img.get("type") in ["OfferImageWide", "Thumbnail"]:
+                        thumbnail = img.get("url")
+                        break
+                if not thumbnail and key_images:
+                    thumbnail = key_images[0].get("url")
+                    
+                promotions = el.get("promotions")
+                if not promotions:
+                    continue
+                    
+                # Current offers
+                promo_offers = promotions.get("promotionalOffers", [])
+                current_active = []
+                for offer_group in promo_offers:
+                    for offer in offer_group.get("promotionalOffers", []):
+                        discount = offer.get("discountSetting", {}).get("discountPercentage", -1)
+                        if discount == 0:
+                            current_active.append(offer)
                             
-                        # Find thumbnail
-                        thumbnail = None
-                        key_images = el.get("keyImages", [])
-                        # Prefer OfferImageWide or Thumbnail
-                        for img in key_images:
-                            if img.get("type") in ["OfferImageWide", "Thumbnail"]:
-                                thumbnail = img.get("url")
-                                break
-                        if not thumbnail and key_images:
-                            thumbnail = key_images[0].get("url")
+                # Upcoming offers
+                upcoming_promo = promotions.get("upcomingPromotionalOffers", [])
+                upcoming_active = []
+                for offer_group in upcoming_promo:
+                    for offer in offer_group.get("promotionalOffers", []):
+                        discount = offer.get("discountSetting", {}).get("discountPercentage", -1)
+                        if discount == 0:
+                            upcoming_active.append(offer)
                             
-                        promotions = el.get("promotions")
-                        if not promotions:
-                            continue
-                            
-                        # Current offers
-                        promo_offers = promotions.get("promotionalOffers", [])
-                        current_active = []
-                        for offer_group in promo_offers:
-                            for offer in offer_group.get("promotionalOffers", []):
-                                discount = offer.get("discountSetting", {}).get("discountPercentage", -1)
-                                if discount == 0:
-                                    current_active.append(offer)
-                                    
-                        # Upcoming offers
-                        upcoming_promo = promotions.get("upcomingPromotionalOffers", [])
-                        upcoming_active = []
-                        for offer_group in upcoming_promo:
-                            for offer in offer_group.get("promotionalOffers", []):
-                                discount = offer.get("discountSetting", {}).get("discountPercentage", -1)
-                                if discount == 0:
-                                    upcoming_active.append(offer)
-                                    
-                        if current_active:
-                            end_date = current_active[0].get("endDate")
-                            result["current"].append({
-                                "title": title,
-                                "slug": slug,
-                                "end_date": end_date,
-                                "thumbnail": thumbnail
-                            })
-                        elif upcoming_active:
-                            start_date = upcoming_active[0].get("startDate")
-                            result["upcoming"].append({
-                                "title": title,
-                                "slug": slug,
-                                "start_date": start_date,
-                                "thumbnail": thumbnail
-                            })
+                if current_active:
+                    end_date = current_active[0].get("endDate")
+                    result["current"].append({
+                        "title": title,
+                        "slug": slug,
+                        "end_date": end_date,
+                        "thumbnail": thumbnail
+                    })
+                elif upcoming_active:
+                    start_date = upcoming_active[0].get("startDate")
+                    result["upcoming"].append({
+                        "title": title,
+                        "slug": slug,
+                        "start_date": start_date,
+                        "thumbnail": thumbnail
+                    })
     except Exception:
         pass
         
@@ -211,80 +260,72 @@ async def get_deals(country: str = EPIC_COUNTRY, min_discount: int = 0, language
     deals = []
     
     try:
-        async with AsyncSession(impersonate="chrome120") as session:
-            response = await session.post(url, headers=headers, json=payload, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
+        data = await _post_graphql(url, headers, payload)
+        if data:
+            elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
+            
+            for el in elements:
+                title = el.get("title")
+                slug = resolve_epic_slug(el)
+                if not slug or not title:
+                    continue
+                    
+                price_data = el.get("price", {}).get("totalPrice", {})
+                if not price_data:
+                    continue
+                    
+                original_price = price_data.get("originalPrice", 0)
+                final_price = price_data.get("discountPrice", 0)
+                discount_amt = price_data.get("discount", 0)
+                currency = price_data.get("currencyCode", "USD")
                 
-                for el in elements:
-                    title = el.get("title")
-                    slug = resolve_epic_slug(el)
-                    if not slug or not title:
-                        continue
-
-                        
-                    price_data = el.get("price", {}).get("totalPrice", {})
-                    if not price_data:
-                        continue
-                        
-                    original_price = price_data.get("originalPrice", 0)
-                    final_price = price_data.get("discountPrice", 0)
-                    discount_amt = price_data.get("discount", 0)
-                    currency = price_data.get("currencyCode", "USD")
+                discount_percent = 0
+                if original_price > 0:
+                    discount_percent = round((discount_amt / original_price) * 100)
                     
-                    # Calculate discount percent
-                    discount_percent = 0
-                    if original_price > 0:
-                        discount_percent = round((discount_amt / original_price) * 100)
-                        
-                    if discount_percent < min_discount or discount_percent == 0:
-                        continue
-                        
-                    # Find end date
-                    end_date = None
-                    promotions = el.get("promotions")
-                    if promotions:
-                        promo_offers = promotions.get("promotionalOffers", [])
-                        for group in promo_offers:
-                            for offer in group.get("promotionalOffers", []):
-                                if offer.get("discountSetting", {}).get("discountPercentage") == discount_percent:
-                                    end_date = offer.get("endDate")
-                                    break
-                            if end_date:
+                if discount_percent < min_discount or discount_percent == 0:
+                    continue
+                    
+                end_date = None
+                promotions = el.get("promotions")
+                if promotions:
+                    promo_offers = promotions.get("promotionalOffers", [])
+                    for group in promo_offers:
+                        for offer in group.get("promotionalOffers", []):
+                            if offer.get("discountSetting", {}).get("discountPercentage") == discount_percent:
+                                end_date = offer.get("endDate")
                                 break
-                                
-                    thumbnail = None
-                    key_images = el.get("keyImages", [])
-                    for img in key_images:
-                        if img.get("type") in ["OfferImageWide", "Thumbnail"]:
-                            thumbnail = img.get("url")
+                        if end_date:
                             break
-                    if not thumbnail and key_images:
-                        thumbnail = key_images[0].get("url")
-                        
-                    # Normalize prices to cents/Steam format
-                    orig_normalized = normalize_epic_price(original_price, currency)
-                    final_normalized = normalize_epic_price(final_price, currency)
+                            
+                thumbnail = None
+                key_images = el.get("keyImages", [])
+                for img in key_images:
+                    if img.get("type") in ["OfferImageWide", "Thumbnail"]:
+                        thumbnail = img.get("url")
+                        break
+                if not thumbnail and key_images:
+                    thumbnail = key_images[0].get("url")
                     
-                    deals.append({
-                        "title": title,
-                        "slug": slug,
-                        "original_price": orig_normalized,
-                        "final_price": final_normalized,
-                        "discount_percent": discount_percent,
-                        "currency": currency,
-                        "end_date": end_date,
-                        "thumbnail": thumbnail
-                    })
+                orig_normalized = normalize_epic_price(original_price, currency)
+                final_normalized = normalize_epic_price(final_price, currency)
+                
+                deals.append({
+                    "title": title,
+                    "slug": slug,
+                    "original_price": orig_normalized,
+                    "final_price": final_normalized,
+                    "discount_percent": discount_percent,
+                    "currency": currency,
+                    "end_date": end_date,
+                    "thumbnail": thumbnail
+                })
     except Exception:
         pass
         
     if deals:
         deals_cache[cache_key] = deals
     return deals
-
-
 
 async def search_game(name: str, language: str = EPIC_LANGUAGE) -> dict | None:
     cache_key = f"{name.lower().strip()}_{language}"
@@ -301,7 +342,6 @@ async def search_game(name: str, language: str = EPIC_LANGUAGE) -> dict | None:
         "Referer": "https://store.epicgames.com/"
     }
     
-    # Escape quotes in game name search keyword
     escaped_name = name.replace('"', '\\"')
     
     query = """
@@ -334,41 +374,35 @@ async def search_game(name: str, language: str = EPIC_LANGUAGE) -> dict | None:
     payload = {"query": query}
     
     try:
-        async with AsyncSession(impersonate="chrome120") as session:
-            response = await session.post(url, headers=headers, json=payload, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
-                if elements:
-                    # Try to find an exact title match (case-insensitive) to avoid matching DLCs or spin-offs
-                    best_match = None
-                    search_clean = name.lower().strip()
-                    for el in elements:
-                        el_title = el.get("title", "")
-                        if el_title.lower().strip() == search_clean:
-                            best_match = el
-                            break
-                            
-                    # Fallback to the first element if no exact match is found
-                    if not best_match:
-                        best_match = elements[0]
+        data = await _post_graphql(url, headers, payload)
+        if data:
+            elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
+            if elements:
+                best_match = None
+                search_clean = name.lower().strip()
+                for el in elements:
+                    el_title = el.get("title", "")
+                    if el_title.lower().strip() == search_clean:
+                        best_match = el
+                        break
                         
-                    slug = resolve_epic_slug(best_match)
-                    if slug:
-                        res = {
-                            "title": best_match.get("title"),
-                            "slug": slug,
-                            "epic_id": best_match.get("id"),
-                            "namespace": best_match.get("namespace")
-                        }
-                        search_cache[cache_key] = res
-                        return res
+                if not best_match:
+                    best_match = elements[0]
+                    
+                slug = resolve_epic_slug(best_match)
+                if slug:
+                    res = {
+                        "title": best_match.get("title"),
+                        "slug": slug,
+                        "epic_id": best_match.get("id"),
+                        "namespace": best_match.get("namespace")
+                    }
+                    search_cache[cache_key] = res
+                    return res
     except Exception:
         pass
         
     return None
-
-
 
 async def get_game_price(slug: str, country: str = EPIC_COUNTRY, language: str = EPIC_LANGUAGE, search_keyword: str = None) -> dict | None:
     cache_key = f"{slug.lower().strip()}_{country}_{language}"
@@ -388,7 +422,6 @@ async def get_game_price(slug: str, country: str = EPIC_COUNTRY, language: str =
     }
     
     import re
-    # Clean the slug for search keywords if no search_keyword is provided
     if not search_keyword:
         search_keyword = re.sub(r'-[0-9a-fA-F]{6}$', '', slug).replace('-', ' ')
     escaped_keyword = search_keyword.replace('"', '\\"')
@@ -446,55 +479,50 @@ async def get_game_price(slug: str, country: str = EPIC_COUNTRY, language: str =
     payload = {"query": query}
     
     try:
-        async with AsyncSession(impersonate="chrome120") as session:
-            response = await session.post(url, headers=headers, json=payload, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
-                
-                for el in elements:
-                    el_slug = resolve_epic_slug(el)
-                    if el_slug and slug and el_slug.lower().strip() == slug.lower().strip():
-                        price_data = el.get("price", {}).get("totalPrice", {})
-                        if not price_data:
-                            continue
-                            
-                        original_price = price_data.get("originalPrice", 0)
-                        final_price = price_data.get("discountPrice", 0)
-                        discount_amt = price_data.get("discount", 0)
-                        currency = price_data.get("currencyCode", "USD")
+        data = await _post_graphql(url, headers, payload)
+        if data:
+            elements = data.get("data", {}).get("Catalog", {}).get("searchStore", {}).get("elements", []) or []
+            
+            for el in elements:
+                el_slug = resolve_epic_slug(el)
+                if el_slug and slug and el_slug.lower().strip() == slug.lower().strip():
+                    price_data = el.get("price", {}).get("totalPrice", {})
+                    if not price_data:
+                        continue
                         
-                        discount_percent = 0
-                        if original_price > 0:
-                            discount_percent = round((discount_amt / original_price) * 100)
-                            
-                        thumbnail = None
-                        key_images = el.get("keyImages", [])
-                        for img in key_images:
-                            if img.get("type") in ["OfferImageWide", "Thumbnail"]:
-                                thumbnail = img.get("url")
-                                break
-                        if not thumbnail and key_images:
-                            thumbnail = key_images[0].get("url")
-                            
-                        orig_normalized = normalize_epic_price(original_price, currency)
-                        final_normalized = normalize_epic_price(final_price, currency)
+                    original_price = price_data.get("originalPrice", 0)
+                    final_price = price_data.get("discountPrice", 0)
+                    discount_amt = price_data.get("discount", 0)
+                    currency = price_data.get("currencyCode", "USD")
+                    
+                    discount_percent = 0
+                    if original_price > 0:
+                        discount_percent = round((discount_amt / original_price) * 100)
                         
-                        res = {
-                            "title": el.get("title"),
-                            "slug": slug,
-                            "original_price": orig_normalized,
-                            "final_price": final_normalized,
-                            "discount_percent": discount_percent,
-                            "currency": currency,
-                            "thumbnail": thumbnail
-                        }
-                        price_cache[cache_key] = res
-                        return res
+                    thumbnail = None
+                    key_images = el.get("keyImages", [])
+                    for img in key_images:
+                        if img.get("type") in ["OfferImageWide", "Thumbnail"]:
+                            thumbnail = img.get("url")
+                            break
+                    if not thumbnail and key_images:
+                        thumbnail = key_images[0].get("url")
+                        
+                    orig_normalized = normalize_epic_price(original_price, currency)
+                    final_normalized = normalize_epic_price(final_price, currency)
+                    
+                    res = {
+                        "title": el.get("title"),
+                        "slug": slug,
+                        "original_price": orig_normalized,
+                        "final_price": final_normalized,
+                        "discount_percent": discount_percent,
+                        "currency": currency,
+                        "thumbnail": thumbnail
+                    }
+                    price_cache[cache_key] = res
+                    return res
     except Exception:
         pass
         
     return None
-
-
-

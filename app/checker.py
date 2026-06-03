@@ -1,6 +1,9 @@
+import logging
 import app.steam as steam
 import app.database as database
 import app.epic as epic
+
+logger = logging.getLogger("steam_deals_bot")
 
 async def save_and_enrich(price: dict) -> dict:
     # Get historical low BEFORE saving the new snapshot
@@ -95,8 +98,8 @@ async def check_watchlist(target_id: str, country: str, language: str = "es") ->
                     epic_price = await epic.get_game_price(game["epic_slug"], country, language, search_keyword=game["game_name"])
                     if epic_price:
                         enriched["epic_price"] = epic_price
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Failed to fetch EGS price for comparison during watchlist check for '{game['game_name']}': {e}")
                     
             enriched_results.append(enriched)
             
@@ -147,8 +150,10 @@ async def check_and_notify(bot) -> dict:
                 channel = bot.get_channel(int(channel_id))
                 
             if not channel:
+                logger.warning(f"Could not find channel or user for target {target_id} (Channel ID: {channel_id if not is_dm else 'N/A'})")
                 continue
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error fetching channel or user for target {target_id}: {e}", exc_info=True)
             continue
             
         deals = featured_deals_cache.get((country, language), [])
@@ -206,6 +211,8 @@ async def check_and_notify(bot) -> dict:
                     if attempts >= 3:
                         await database.stop_notifications(target_id)
                         break
+                else:
+                    logger.error(f"Error sending Steam/EGS watchlist alerts to target {target_id}: {e}", exc_info=True)
                 
     return {
         "targets_checked": len(targets),
@@ -243,8 +250,10 @@ async def check_epic_and_notify(bot) -> dict:
                 channel = bot.get_channel(int(channel_to_use))
                 
             if not channel:
+                logger.warning(f"Could not find channel or user for target {target_id} (Channel ID: {channel_to_use if not is_dm else 'N/A'})")
                 continue
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error fetching channel or user for target {target_id}: {e}", exc_info=True)
             continue
             
         min_discount = await database.get_min_discount(target_id)
@@ -309,6 +318,8 @@ async def check_epic_and_notify(bot) -> dict:
                     if attempts >= 3:
                         await database.stop_notifications(target_id)
                         break
+                else:
+                    logger.error(f"Error sending Epic deal alerts to target {target_id}: {e}", exc_info=True)
                         
     return {
         "targets_checked": len(targets),
@@ -344,8 +355,10 @@ async def check_epic_free_games(bot) -> dict:
                 channel = bot.get_channel(int(channel_to_use))
                 
             if not channel:
+                logger.warning(f"Could not find channel or user for target {target_id} (Channel ID: {channel_to_use if not is_dm else 'N/A'})")
                 continue
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error fetching channel or user for target {target_id}: {e}", exc_info=True)
             continue
             
         free_games = free_games_cache.get((country, language), {"current": [], "upcoming": []})
@@ -375,6 +388,8 @@ async def check_epic_free_games(bot) -> dict:
                     if attempts >= 3:
                         await database.stop_notifications(target_id)
                         break
+                else:
+                    logger.error(f"Error sending Epic free games alerts to target {target_id}: {e}", exc_info=True)
                         
     return {
         "targets_checked": len(targets),
