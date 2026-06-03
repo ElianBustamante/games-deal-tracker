@@ -192,12 +192,20 @@ async def get_all_configured_targets() -> list[dict]:
 # Config Functions
 async def set_channel(server_id: str, channel_id: str, is_dm: bool = False) -> None:
     async with await connect_db() as db:
+        # Check if the target was already configured
+        cursor = await db.execute("SELECT 1 FROM server_config WHERE server_id = ?", (server_id,))
+        exists = await cursor.fetchone() is not None
+        
         await db.execute(
             """INSERT INTO server_config (server_id, channel_id, is_dm) VALUES (?, ?, ?)
                ON CONFLICT(server_id) DO UPDATE SET channel_id = excluded.channel_id, is_dm = excluded.is_dm""",
             (server_id, channel_id, is_dm)
         )
         await db.commit()
+        
+        if not exists:
+            target_type = "DM User" if is_dm else "Server"
+            print(f"New {target_type} registered: ID {server_id} (Channel: {channel_id})")
 
 async def set_epic_channel(server_id: str, channel_id: str | None) -> None:
     async with await connect_db() as db:

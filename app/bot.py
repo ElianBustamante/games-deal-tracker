@@ -86,6 +86,10 @@ class SteamDealsBot(commands.Bot):
         await database.stop_notifications(str(guild.id))
         print(f"Bot removed from guild {guild.id} — data deleted.")
 
+    async def on_guild_join(self, guild: discord.Guild):
+        print(f"Bot added to new guild: '{guild.name}' (ID: {guild.id}) - Members: {guild.member_count}")
+
+
 def get_target_id(interaction: discord.Interaction) -> tuple[str, bool]:
     if interaction.guild_id:
         return str(interaction.guild_id), False
