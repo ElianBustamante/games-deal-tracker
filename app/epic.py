@@ -384,7 +384,11 @@ async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str 
         "Referer": "https://store.epicgames.com/"
     }
     
-    # We query using keywords/search terms matching the slug
+    import re
+    # Clean the slug for search keywords: strip trailing 6-char hex hash and replace hyphens with spaces
+    search_keyword = re.sub(r'-[0-9a-fA-F]{6}$', '', slug).replace('-', ' ')
+    escaped_keyword = search_keyword.replace('"', '\\"')
+    
     query = """
     {
       Catalog {
@@ -433,7 +437,7 @@ async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str 
         }
       }
     }
-    """ % (slug, country_upper, locale, country_upper)
+    """ % (escaped_keyword, country_upper, locale, country_upper)
     
     payload = {"query": query}
     
