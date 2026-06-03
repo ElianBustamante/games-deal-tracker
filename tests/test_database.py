@@ -125,6 +125,10 @@ async def test_epic_specific_database_operations():
     await database.mark_as_notified(server_id, epic_slug, store="epic")
     assert await database.was_notified_today(server_id, epic_slug, store="epic") is True
     assert await database.was_notified_today(server_id, epic_slug, store="steam") is False
+    
+    # Test that stop_notifications clears notified_deals
+    await database.stop_notifications(server_id)
+    assert await database.was_notified_today(server_id, epic_slug, store="epic") is False
 
 @pytest.mark.asyncio
 async def test_save_price_snapshot_deduplicates_identical_consecutive_snapshots():

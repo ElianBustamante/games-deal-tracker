@@ -219,9 +219,22 @@ async def get_effective_epic_channel(server_id: str) -> str | None:
 
 async def stop_notifications(server_id: str) -> None:
     async with await connect_db() as db:
+        # Check if the target exists in database before deleting so we can print a specific message
+        cursor = await db.execute("SELECT is_dm FROM server_config WHERE server_id = ?", (server_id,))
+        row = await cursor.fetchone()
+        
         await db.execute("DELETE FROM server_config WHERE server_id = ?", (server_id,))
         await db.execute("DELETE FROM watchlist WHERE server_id = ?", (server_id,))
+        await db.execute("DELETE FROM notified_deals WHERE server_id = ?", (server_id,))
         await db.commit()
+        
+        if row is not None:
+            is_dm = bool(row[0])
+            target_type = "DM User" if is_dm else "Server"
+            print(f"Data successfully deleted from database for {target_type} (ID: {server_id}).")
+        else:
+            print(f"Data cleanup performed from database for Target (ID: {server_id}).")
+
 
 async def get_channel(server_id: str) -> str | None:
     async with await connect_db() as db:

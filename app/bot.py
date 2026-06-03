@@ -1,8 +1,11 @@
 import os
+import logging
 import discord
 from discord.ext import commands
 from discord import app_commands
 from dotenv import load_dotenv
+
+logger = logging.getLogger("steam_deals_bot")
 
 import app.steam as steam
 import app.database as database
@@ -349,6 +352,13 @@ async def stop_alerts(interaction: discord.Interaction):
         return
         
     await database.stop_notifications(target_id)
+    if is_dm:
+        logger.info(f"Data deleted for DM User {interaction.user.name} (ID: {target_id})")
+        print(f"Data deleted for DM User {interaction.user.name} (ID: {target_id}) via /stop command.")
+    else:
+        guild_name = interaction.guild.name if interaction.guild else "Unknown Server"
+        logger.info(f"Data deleted for Server '{guild_name}' (ID: {target_id}) by user {interaction.user.name}")
+        print(f"Data deleted for Server '{guild_name}' (ID: {target_id}) by user {interaction.user.name} via /stop command.")
     await interaction.response.send_message(get_text("alerts_stopped", interaction.locale), ephemeral=True)
 
 @bot.tree.command(name="steamdeals", description="Busca ofertas de Steam manualmente en este momento")
