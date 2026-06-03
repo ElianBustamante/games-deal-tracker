@@ -10,6 +10,9 @@ load_dotenv()
 STEAM_COUNTRY = os.getenv("STEAM_COUNTRY", "cl")
 STEAM_LANGUAGE = os.getenv("STEAM_LANGUAGE", "es")
 
+EPIC_COUNTRY = os.getenv("EPIC_COUNTRY", STEAM_COUNTRY)
+EPIC_LANGUAGE = os.getenv("EPIC_LANGUAGE", STEAM_LANGUAGE)
+
 # Cache for EGS deals (5 minutes TTL)
 deals_cache = TTLCache(maxsize=100, ttl=300)
 
@@ -55,7 +58,7 @@ def resolve_epic_slug(element: dict) -> str | None:
     return element.get("productSlug") or element.get("urlSlug")
 
 
-async def get_free_games(country: str = STEAM_COUNTRY, language: str = STEAM_LANGUAGE) -> dict:
+async def get_free_games(country: str = EPIC_COUNTRY, language: str = EPIC_LANGUAGE) -> dict:
     locale = get_epic_locale(language)
     country_upper = country.upper()
     
@@ -136,7 +139,7 @@ async def get_free_games(country: str = STEAM_COUNTRY, language: str = STEAM_LAN
         
     return result
 
-async def get_deals(country: str = STEAM_COUNTRY, min_discount: int = 0, language: str = STEAM_LANGUAGE) -> list[dict]:
+async def get_deals(country: str = EPIC_COUNTRY, min_discount: int = 0, language: str = EPIC_LANGUAGE) -> list[dict]:
     cache_key = f"{country}_{min_discount}_{language}"
     if cache_key in deals_cache:
         return deals_cache[cache_key]
@@ -283,7 +286,7 @@ async def get_deals(country: str = STEAM_COUNTRY, min_discount: int = 0, languag
 
 
 
-async def search_game(name: str, language: str = STEAM_LANGUAGE) -> dict | None:
+async def search_game(name: str, language: str = EPIC_LANGUAGE) -> dict | None:
     cache_key = f"{name.lower().strip()}_{language}"
     if cache_key in search_cache:
         return search_cache[cache_key]
@@ -367,7 +370,7 @@ async def search_game(name: str, language: str = STEAM_LANGUAGE) -> dict | None:
 
 
 
-async def get_game_price(slug: str, country: str = STEAM_COUNTRY, language: str = STEAM_LANGUAGE, search_keyword: str = None) -> dict | None:
+async def get_game_price(slug: str, country: str = EPIC_COUNTRY, language: str = EPIC_LANGUAGE, search_keyword: str = None) -> dict | None:
     cache_key = f"{slug.lower().strip()}_{country}_{language}"
     if cache_key in price_cache:
         return price_cache[cache_key]
