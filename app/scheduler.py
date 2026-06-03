@@ -18,14 +18,6 @@ CHECK_INTERVAL_HOURS = int(os.getenv("CHECK_INTERVAL_HOURS", "6"))
 async def scheduled_check():
     logger.info("Starting scheduled deals check...")
     
-    # Run Steam check
-    try:
-        logger.info("Running Steam deals check...")
-        stats = await check_and_notify(bot)
-        logger.info(f"Steam check completed. Checked {stats['targets_checked']} targets, sent {stats['total_deals_sent']} alerts.")
-    except Exception as e:
-        logger.error(f"Error during scheduled Steam deal check: {e}", exc_info=True)
-        
     # Run Epic check
     try:
         logger.info("Running Epic Games Store deals check...")
@@ -33,6 +25,14 @@ async def scheduled_check():
         logger.info(f"Epic check completed. Checked {stats_epic['targets_checked']} targets, sent {stats_epic['total_deals_sent']} alerts.")
     except Exception as e:
         logger.error(f"Error during scheduled Epic deal check: {e}", exc_info=True)
+        
+    # Run Steam check
+    try:
+        logger.info("Running Steam deals check...")
+        stats = await check_and_notify(bot)
+        logger.info(f"Steam check completed. Checked {stats['targets_checked']} targets, sent {stats['total_deals_sent']} alerts.")
+    except Exception as e:
+        logger.error(f"Error during scheduled Steam deal check: {e}", exc_info=True)
 
 async def scheduled_epic_free_games_check():
     logger.info("Starting scheduled Epic Games Store free games check...")

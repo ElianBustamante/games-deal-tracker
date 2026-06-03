@@ -166,7 +166,10 @@ async def check_and_notify(bot) -> dict:
             
         locale = await database.get_language(target_id)
         
-        for deal in deals_by_app_id.values():
+        # Sort deals so Epic deals are sent first, then Steam deals
+        sorted_deals = sorted(deals_by_app_id.values(), key=lambda d: 0 if d.get("store") == "epic" else 1)
+        
+        for deal in sorted_deals:
             try:
                 if deal.get("store") == "epic":
                     from app.formatter import make_epic_deal_embed, DealView
