@@ -20,7 +20,8 @@ A Discord bot that monitors Steam and Epic Games Store (EGS) deals and posts ale
 ## Tech Stack
 
 - **Python 3.11+** & **discord.py** (Bot Framework)
-- **aiohttp** (Async HTTP Client for Steam and EGS GraphQL/JSON API requests)
+- **aiohttp** (Async HTTP Client for Steam API and static EGS request endpoints)
+- **curl-cffi** (Async HTTP client that impersonates real browser TLS fingerprints to bypass Cloudflare protection on EGS API endpoints)
 - **SQLite** & **aiosqlite** (Async Database for configurations, watchlists, and price history)
 - **apscheduler** (Cron-based task scheduling)
 - **pytest**, **pytest-asyncio** & **pytest-mock** (Testing suite)
@@ -64,7 +65,7 @@ python main.py
 - `/setcountry` - Set the country region to get local currency prices.
 - `/watchlist add` | `remove` | `show` - Manage your monitored games (supports Steam and Epic Games Store).
 - `/compare` - Compare current prices and histories side-by-side between Steam and Epic.
-- `/history` - Show the recorded price history for a specific game (checks Steam, falls back to Epic).
+- `/history` - Show the recorded price history for a specific game on both Steam and Epic Games Store.
 - `/steamdeals` - Search for Steam deals manually right now.
 - `/epicdeals` - Search for Epic Games Store deals manually right now.
 - `/epicfree` - Show the current and upcoming free games from Epic Games Store.
