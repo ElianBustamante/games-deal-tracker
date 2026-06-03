@@ -161,7 +161,7 @@ async def get_deals(country: str = STEAM_COUNTRY, min_discount: int = 0, languag
           country: "%s"
           locale: "%s"
           sortBy: "currentPrice"
-          count: 40
+          count: 30
           category: "games/edition/base"
         ) {
           elements {
