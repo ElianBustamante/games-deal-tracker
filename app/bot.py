@@ -14,7 +14,7 @@ import app.steam as steam
 import app.database as database
 import app.checker as checker
 import app.epic as epic
-from app.formatter import make_history_embed, make_comparison_embed, make_epic_free_embed
+from app.formatter import make_history_embed, make_comparison_embed, make_epic_free_embed, format_price
 from app.i18n import BotTranslator, get_text
 
 STEAM_COUNTRIES = {
@@ -253,36 +253,59 @@ async def watchlist_show(interaction: discord.Interaction):
         await interaction.followup.send(get_text("list_empty", interaction.locale))
         return
         
+    country = await database.get_country(target_id)
+    language = await database.get_language(target_id)
+    
     embed = discord.Embed(title=get_text("watchlist_title", interaction.locale), color=discord.Color.blue())
     
     for game in watchlist:
         app_id_str = str(game["app_id"])
         is_epic_only = app_id_str.startswith("epic:") or not app_id_str.isdigit()
+        
+        steam_status = get_text("not_available", interaction.locale)
+        epic_status = get_text("not_available", interaction.locale)
+        
+        # 1. Steam Check
+        if not is_epic_only:
+            app_id = int(app_id_str)
+            steam_price = await steam.get_game_price(app_id, country)
+            if steam_price:
+                formatted_p = format_price(steam_price["price_final"], steam_price["currency"])
+                if steam_price.get("discount_percent", 0) > 0:
+                    steam_status = get_text("status_discount", interaction.locale, discount=steam_price['discount_percent']) + f" ({formatted_p})"
+                else:
+                    steam_status = get_text("status_no_discount", interaction.locale) + f" ({formatted_p})"
+                    
+        # 2. Epic Check
+        epic_slug = game.get("epic_slug")
         if is_epic_only:
-            slug = app_id_str.replace("epic:", "")
-            price = await epic.get_game_price(slug, search_keyword=game["game_name"])
-            if price and price.get("discount_percent", 0) > 0:
-                status = get_text("status_discount", interaction.locale, discount=price['discount_percent'])
-            else:
-                status = get_text("status_no_discount", interaction.locale)
-                
-            embed.add_field(
-                name=f"🟣 {game['game_name']}", 
-                value=f"{get_text('status', interaction.locale)}: {status}\n{get_text('added', interaction.locale)}: {game['added_at'][:10]}",
-                inline=False
-            )
-        else:
-            price = await steam.get_game_price(game["app_id"])
-            if price and price.get("discount_percent", 0) > 0:
-                status = get_text("status_discount", interaction.locale, discount=price['discount_percent'])
-            else:
-                status = get_text("status_no_discount", interaction.locale)
-                
-            embed.add_field(
-                name=f"🟦 {game['game_name']}", 
-                value=f"{get_text('status', interaction.locale)}: {status}\n{get_text('added', interaction.locale)}: {game['added_at'][:10]}",
-                inline=False
-            )
+            epic_slug = app_id_str.replace("epic:", "")
+            
+        if epic_slug:
+            epic_price = await epic.get_game_price(epic_slug, country, language, search_keyword=game["game_name"])
+            if epic_price:
+                formatted_p = format_price(epic_price["price_final"], epic_price["currency"])
+                if epic_price.get("discount_percent", 0) > 0:
+                    epic_status = get_text("status_discount", interaction.locale, discount=epic_price['discount_percent']) + f" ({formatted_p})"
+                else:
+                    epic_status = get_text("status_no_discount", interaction.locale) + f" ({formatted_p})"
+                    
+        # Build field name with appropriate store icons
+        icons = []
+        if not is_epic_only:
+            icons.append("🟦")
+        if epic_slug:
+            icons.append("🟣")
+        icon_str = " ".join(icons)
+        
+        field_name = f"{icon_str} {game['game_name']}"
+        field_value = (
+            f"• **Steam:** {steam_status}\n"
+            f"• **Epic:** {epic_status}\n"
+            f"{get_text('added', interaction.locale)}: {game['added_at'][:10]}"
+        )
+        
+        embed.add_field(name=field_name, value=field_value, inline=False)
         
     await interaction.followup.send(embed=embed)
 
