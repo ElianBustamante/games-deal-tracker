@@ -284,7 +284,7 @@ async def watchlist_show(interaction: discord.Interaction):
         if epic_slug:
             epic_price = await epic.get_game_price(epic_slug, country, language, search_keyword=game["game_name"])
             if epic_price:
-                formatted_p = format_price(epic_price["price_final"], epic_price["currency"])
+                formatted_p = format_price(epic_price["final_price"], epic_price["currency"])
                 if epic_price.get("discount_percent", 0) > 0:
                     epic_status = get_text("status_discount", interaction.locale, discount=epic_price['discount_percent']) + f" ({formatted_p})"
                 else:
