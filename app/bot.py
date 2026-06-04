@@ -265,10 +265,18 @@ async def watchlist_show(interaction: discord.Interaction):
         steam_status = get_text("not_available", interaction.locale)
         epic_status = get_text("not_available", interaction.locale)
         
-        # 1. Steam Check
+        # 1. Resolve Steam ID (either stored directly, or searched dynamically if epic-only)
+        steam_id = None
         if not is_epic_only:
-            app_id = int(app_id_str)
-            steam_price = await steam.get_game_price(app_id, country)
+            steam_id = int(app_id_str)
+        else:
+            # Fallback search on Steam to display both if not linked originally
+            steam_res = await steam.search_game(game["game_name"], country, language)
+            if steam_res:
+                steam_id = steam_res["app_id"]
+                
+        if steam_id:
+            steam_price = await steam.get_game_price(steam_id, country)
             if steam_price:
                 formatted_p = format_price(steam_price["price_final"], steam_price["currency"])
                 if steam_price.get("discount_percent", 0) > 0:
@@ -276,11 +284,17 @@ async def watchlist_show(interaction: discord.Interaction):
                 else:
                     steam_status = get_text("status_no_discount", interaction.locale) + f" ({formatted_p})"
                     
-        # 2. Epic Check
+        # 2. Resolve Epic Slug (either stored, or searched dynamically if not linked originally)
         epic_slug = game.get("epic_slug")
         if is_epic_only:
             epic_slug = app_id_str.replace("epic:", "")
             
+        if not epic_slug:
+            # Fallback search on Epic to display both if not linked originally
+            epic_res = await epic.search_game(game["game_name"], language)
+            if epic_res:
+                epic_slug = epic_res["slug"]
+                
         if epic_slug:
             epic_price = await epic.get_game_price(epic_slug, country, language, search_keyword=game["game_name"])
             if epic_price:
@@ -292,7 +306,7 @@ async def watchlist_show(interaction: discord.Interaction):
                     
         # Build field name with appropriate store icons
         icons = []
-        if not is_epic_only:
+        if steam_id:
             icons.append("🟦")
         if epic_slug:
             icons.append("🟣")

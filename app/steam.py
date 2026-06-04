@@ -40,7 +40,8 @@ async def _fetch_url(url: str, timeout_secs: int = 10, max_attempts: int = 3, de
     return None
 
 async def search_game(name: str, country: str = STEAM_COUNTRY, language: str = STEAM_LANGUAGE) -> dict | None:
-    url = f"https://store.steampowered.com/api/storesearch/?term={name}&l={language}&cc={country}"
+    cleaned_name = name.replace("®", "").replace("™", "").strip()
+    url = f"https://store.steampowered.com/api/storesearch/?term={cleaned_name}&l={language}&cc={country}"
     try:
         data = await _fetch_url(url)
         if data and data.get("items"):
