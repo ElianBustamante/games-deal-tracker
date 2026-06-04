@@ -304,7 +304,7 @@ async def watchlist_show(interaction: discord.Interaction):
                 else:
                     epic_status = get_text("status_no_discount", interaction.locale) + f" ({formatted_p})"
                     
-        # Build field name with appropriate store icons
+        # Build field name with appropriate store icons and link labels
         icons = []
         if steam_id:
             icons.append("🟦")
@@ -312,10 +312,13 @@ async def watchlist_show(interaction: discord.Interaction):
             icons.append("🟣")
         icon_str = " ".join(icons)
         
+        steam_label = f"[Steam]({steam.get_store_url(steam_id)})" if steam_id else "Steam"
+        epic_label = f"[Epic]({epic.get_store_url(epic_slug)})" if epic_slug else "Epic"
+        
         field_name = f"{icon_str} {game['game_name']}"
         field_value = (
-            f"• **Steam:** {steam_status}\n"
-            f"• **Epic:** {epic_status}\n"
+            f"• **{steam_label}:** {steam_status}\n"
+            f"• **{epic_label}:** {epic_status}\n"
             f"{get_text('added', interaction.locale)}: {game['added_at'][:10]}"
         )
         
